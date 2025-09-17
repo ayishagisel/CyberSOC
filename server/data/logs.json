@@ -1,0 +1,111 @@
+[
+  {
+    "id": "log-001",
+    "timestamp": "2025-01-17T13:01:23Z",
+    "source": "Azure Sentinel",
+    "severity": "Critical",
+    "message": "File encryption activity detected on HU-FINANCE-PC01",
+    "event_id": "1116",
+    "endpoint_id": "endpoint-01",
+    "raw_data": {
+      "process_name": "ransomware.exe",
+      "file_path": "C:\\Users\\j.doe\\Documents\\",
+      "action": "file_encryption"
+    }
+  },
+  {
+    "id": "log-002",
+    "timestamp": "2025-01-17T13:00:45Z",
+    "source": "Windows Event Log",
+    "severity": "High",
+    "message": "PowerShell execution with suspicious parameters detected",
+    "event_id": "4688",
+    "endpoint_id": "endpoint-01",
+    "raw_data": {
+      "command_line": "powershell.exe -ExecutionPolicy Bypass -WindowStyle Hidden -Command [base64_encoded_command]",
+      "parent_process": "winword.exe"
+    }
+  },
+  {
+    "id": "log-003",
+    "timestamp": "2025-01-17T12:58:12Z",
+    "source": "Network Monitor",
+    "severity": "Medium",
+    "message": "Unusual network traffic pattern to external IP 185.220.101.32",
+    "event_id": "NET001",
+    "raw_data": {
+      "destination_ip": "185.220.101.32",
+      "protocol": "HTTPS",
+      "port": 443,
+      "bytes_transferred": 1024000
+    }
+  },
+  {
+    "id": "log-004",
+    "timestamp": "2025-01-17T12:55:33Z",
+    "source": "Azure AD",
+    "severity": "Info",
+    "message": "User j.doe logged in from new device",
+    "event_id": "4624",
+    "raw_data": {
+      "user": "j.doe",
+      "device": "DESKTOP-ABC123",
+      "location": "On-premises",
+      "authentication_method": "NTLM"
+    }
+  },
+  {
+    "id": "log-005",
+    "timestamp": "2025-01-17T12:50:15Z",
+    "source": "Defender for Endpoint",
+    "severity": "High",
+    "message": "Malicious file hash detected: SHA256:a1b2c3d4e5f6...",
+    "event_id": "1117",
+    "endpoint_id": "endpoint-01",
+    "raw_data": {
+      "file_hash": "a1b2c3d4e5f67890abcdef1234567890abcdef1234567890abcdef1234567890",
+      "file_path": "C:\\Temp\\malware.exe",
+      "detection_name": "Trojan:Win32/Ransomware.Generic"
+    }
+  },
+  {
+    "id": "log-006",
+    "timestamp": "2025-01-17T12:45:00Z",
+    "source": "Office 365",
+    "severity": "Medium",
+    "message": "Mass file modification detected in SharePoint",
+    "event_id": "SP001",
+    "raw_data": {
+      "user": "j.doe",
+      "site": "Finance Department",
+      "files_modified": 150,
+      "time_window": "5 minutes"
+    }
+  },
+  {
+    "id": "log-007",
+    "timestamp": "2025-01-17T12:40:30Z",
+    "source": "Windows Event Log",
+    "severity": "Low",
+    "message": "User account lockout event",
+    "event_id": "4740",
+    "raw_data": {
+      "target_user": "service_account",
+      "caller_workstation": "HU-FINANCE-PC01",
+      "lockout_reason": "Multiple failed login attempts"
+    }
+  },
+  {
+    "id": "log-008",
+    "timestamp": "2025-01-17T12:35:45Z",
+    "source": "Azure Sentinel",
+    "severity": "Info",
+    "message": "Security policy update applied to Finance OU",
+    "event_id": "5136",
+    "raw_data": {
+      "policy_name": "Ransomware Protection Policy",
+      "applied_to": "Finance Department OU",
+      "administrator": "admin.security"
+    }
+  }
+]

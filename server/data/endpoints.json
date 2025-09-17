@@ -1,0 +1,65 @@
+[
+  {
+    "id": "endpoint-01",
+    "hostname": "HU-FINANCE-PC01",
+    "ip_address": "10.1.5.12",
+    "user": "j.doe",
+    "status": "Affected",
+    "os": "Windows 11",
+    "department": "Finance"
+  },
+  {
+    "id": "endpoint-02",
+    "hostname": "HU-FINANCE-PC02",
+    "ip_address": "10.1.5.13",
+    "user": "m.smith",
+    "status": "Isolated",
+    "os": "Windows 10",
+    "department": "Finance"
+  },
+  {
+    "id": "endpoint-03",
+    "hostname": "HU-FINANCE-PC03",
+    "ip_address": "10.1.5.14",
+    "user": "a.wilson",
+    "status": "Affected",
+    "os": "Windows 11",
+    "department": "Finance"
+  },
+  {
+    "id": "endpoint-04",
+    "hostname": "HU-FINANCE-PC04",
+    "ip_address": "10.1.5.15",
+    "user": "r.johnson",
+    "status": "Affected",
+    "os": "Windows 10",
+    "department": "Finance"
+  },
+  {
+    "id": "endpoint-05",
+    "hostname": "HU-FINANCE-PC05",
+    "ip_address": "10.1.5.16",
+    "user": "s.brown",
+    "status": "Affected",
+    "os": "Windows 11",
+    "department": "Finance"
+  },
+  {
+    "id": "endpoint-06",
+    "hostname": "HU-IT-WS01",
+    "ip_address": "10.1.2.10",
+    "user": "admin.tech",
+    "status": "Normal",
+    "os": "Windows Server 2022",
+    "department": "IT"
+  },
+  {
+    "id": "endpoint-07",
+    "hostname": "HU-HR-PC01",
+    "ip_address": "10.1.3.20",
+    "user": "hr.coordinator",
+    "status": "Normal",
+    "os": "Windows 11",
+    "department": "HR"
+  }
+]

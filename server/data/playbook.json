@@ -1,0 +1,50 @@
+[
+  {
+    "id": "ransomware-response",
+    "name": "Ransomware Response Playbook",
+    "description": "Comprehensive playbook for responding to ransomware incidents",
+    "start_node": "detection_phase",
+    "nodes": {
+      "detection_phase": {
+        "id": "detection_phase",
+        "title": "Initial Detection and Assessment",
+        "ai_prompt": "Ransomware activity has been detected on multiple endpoints. The AI assistant recommends immediate containment actions to prevent lateral movement.",
+        "phase": "Detection",
+        "options": [
+          {
+            "label": "Begin Containment Protocol",
+            "action": "START_CONTAINMENT",
+            "next_node": "containment_phase"
+          },
+          {
+            "label": "Gather More Intelligence First",
+            "action": "INTELLIGENCE_GATHERING",
+            "next_node": "intelligence_phase"
+          }
+        ],
+        "mitre_techniques": ["T1486", "T1059.001"],
+        "playbook_reference": "NIST CSF: DE.AE-1, DE.AE-2"
+      },
+      "containment_phase": {
+        "id": "containment_phase",
+        "title": "Immediate Containment",
+        "ai_prompt": "Execute immediate containment measures to isolate infected systems and prevent further spread of the ransomware.",
+        "phase": "Remediation",
+        "options": [
+          {
+            "label": "Isolate All Affected Endpoints",
+            "action": "ISOLATE_ENDPOINTS",
+            "next_node": "isolation_complete"
+          },
+          {
+            "label": "Selective Isolation Based on Criticality",
+            "action": "SELECTIVE_ISOLATION",
+            "next_node": "analysis_phase"
+          }
+        ],
+        "mitre_techniques": ["T1486"],
+        "playbook_reference": "NIST CSF: RS.RP-1, RS.CO-2"
+      }
+    }
+  }
+]

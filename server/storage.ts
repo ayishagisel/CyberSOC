@@ -1,4 +1,7 @@
-import type { Alert, Endpoint, LogEntry, Playbook, WorkflowSession, Report } from "@shared/schema";
+import type { Alert, Endpoint, LogEntry, Playbook, WorkflowSession, Report, InsertAlert, InsertEndpoint, InsertLogEntry, InsertPlaybook, InsertWorkflowSession, InsertReport } from "@shared/schema";
+import { alerts, endpoints, logs, playbooks, workflow_sessions, reports } from "@shared/schema";
+import { db } from "./db";
+import { eq, and, desc, asc } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import fs from "fs/promises";
 import path from "path";
@@ -144,7 +147,7 @@ export class FileStorage implements IStorage {
     const report: Report = {
       id: randomUUID(),
       session_id: sessionId,
-      generated_at: new Date().toISOString(),
+      generated_at: new Date(),
       incident_summary: {
         title: "Ransomware Attack - Financial Department",
         severity: "Critical",
@@ -178,4 +181,140 @@ export class FileStorage implements IStorage {
   }
 }
 
-export const storage = new FileStorage();
+// Reference: Drizzle blueprint integration for database setup
+export class DatabaseStorage implements IStorage {
+  async getAlerts(): Promise<Alert[]> {
+    return db.select().from(alerts).orderBy(desc(alerts.timestamp));
+  }
+
+  async getAlert(id: string): Promise<Alert | undefined> {
+    const [alert] = await db.select().from(alerts).where(eq(alerts.id, id));
+    return alert || undefined;
+  }
+
+  async updateAlert(id: string, updates: Partial<Alert>): Promise<Alert | undefined> {
+    const [alert] = await db
+      .update(alerts)
+      .set(updates)
+      .where(eq(alerts.id, id))
+      .returning();
+    return alert || undefined;
+  }
+
+  async getEndpoints(): Promise<Endpoint[]> {
+    return db.select().from(endpoints).orderBy(asc(endpoints.hostname));
+  }
+
+  async getEndpoint(id: string): Promise<Endpoint | undefined> {
+    const [endpoint] = await db.select().from(endpoints).where(eq(endpoints.id, id));
+    return endpoint || undefined;
+  }
+
+  async updateEndpoint(id: string, updates: Partial<Endpoint>): Promise<Endpoint | undefined> {
+    const [endpoint] = await db
+      .update(endpoints)
+      .set(updates)
+      .where(eq(endpoints.id, id))
+      .returning();
+    return endpoint || undefined;
+  }
+
+  async getLogs(filters?: { source?: string; severity?: string; limit?: number }): Promise<LogEntry[]> {
+    const conditions = [];
+    
+    if (filters?.source && filters.source !== "All Sources") {
+      conditions.push(eq(logs.source, filters.source));
+    }
+    
+    if (filters?.severity && filters.severity !== "All Severities") {
+      conditions.push(eq(logs.severity, filters.severity as any));
+    }
+    
+    let query = db.select().from(logs);
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+    
+    const result = await query.orderBy(desc(logs.timestamp));
+    
+    if (filters?.limit) {
+      return result.slice(0, filters.limit);
+    }
+    
+    return result;
+  }
+
+  async getPlaybook(id: string): Promise<Playbook | undefined> {
+    const [playbook] = await db.select().from(playbooks).where(eq(playbooks.id, id));
+    return playbook || undefined;
+  }
+
+  async createWorkflowSession(session: Omit<WorkflowSession, "id">): Promise<WorkflowSession> {
+    const [newSession] = await db
+      .insert(workflow_sessions)
+      .values(session)
+      .returning();
+    return newSession;
+  }
+
+  async getWorkflowSession(id: string): Promise<WorkflowSession | undefined> {
+    const [session] = await db.select().from(workflow_sessions).where(eq(workflow_sessions.id, id));
+    return session || undefined;
+  }
+
+  async updateWorkflowSession(id: string, updates: Partial<WorkflowSession>): Promise<WorkflowSession | undefined> {
+    const [session] = await db
+      .update(workflow_sessions)
+      .set(updates)
+      .where(eq(workflow_sessions.id, id))
+      .returning();
+    return session || undefined;
+  }
+
+  async generateReport(sessionId: string): Promise<Report> {
+    const session = await this.getWorkflowSession(sessionId);
+    const alert = session ? await this.getAlert(session.alert_id) : null;
+    
+    const reportData = {
+      session_id: sessionId,
+      incident_summary: {
+        title: alert?.title || "Security Incident",
+        severity: alert?.severity || "Medium",
+        affected_assets: alert?.affected_endpoints?.length || 0,
+        response_time: "15 minutes",
+        status: alert?.status || "In Progress"
+      },
+      timeline: [
+        {
+          timestamp: new Date().toISOString(),
+          phase: "Detection",
+          action: "Alert Generated",
+          details: alert?.description || "Security incident detected"
+        },
+        {
+          timestamp: new Date().toISOString(),
+          phase: "Investigation",
+          action: "Analysis Started",
+          details: "Incident response team engaged"
+        }
+      ],
+      mitre_techniques: alert?.mitre_tactics || [],
+      recommendations: [
+        "Implement regular security assessments",
+        "Enhance monitoring capabilities",
+        "Conduct incident response training"
+      ]
+    };
+
+    const [report] = await db
+      .insert(reports)
+      .values(reportData)
+      .returning();
+    
+    return report;
+  }
+}
+
+// Use DatabaseStorage for database-backed persistence
+export const storage = new DatabaseStorage();

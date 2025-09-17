@@ -87,6 +87,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get playbook for specific alert type
+  app.get("/api/alerts/:alertId/playbook", async (req, res) => {
+    try {
+      const alert = await storage.getAlert(req.params.alertId);
+      if (!alert) {
+        return res.status(404).json({ error: "Alert not found" });
+      }
+
+      // Map alert title to playbook ID
+      let playbookId = "ransomware-response"; // default
+      if (alert.title.toLowerCase().includes("phishing")) {
+        playbookId = "phishing-response";
+      } else if (alert.title.toLowerCase().includes("credential")) {
+        playbookId = "credential-compromise-response";
+      }
+
+      const playbook = await storage.getPlaybook(playbookId);
+      if (!playbook) {
+        return res.status(404).json({ error: "Playbook not found" });
+      }
+      res.json(playbook);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch playbook for alert" });
+    }
+  });
+
   // Workflow sessions
   app.post("/api/workflow-sessions", async (req, res) => {
     try {

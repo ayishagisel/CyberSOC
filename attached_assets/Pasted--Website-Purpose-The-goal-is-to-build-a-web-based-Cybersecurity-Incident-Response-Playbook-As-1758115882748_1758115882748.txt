@@ -1,0 +1,189 @@
+### 🌐 Website Purpose
+The goal is to build a web-based "Cybersecurity Incident Response Playbook Assistant," an MVP designed as a training and simulation tool. It guides a cybersecurity analyst through a mock ransomware attack in a simulated university IT environment (inspired by Howard University's infrastructure).
+
+The application serves three distinct user personas:
+1.  **Cybersecurity Analyst**: The primary user who interacts with the tool to investigate and respond to the simulated incident.
+2.  **Manager**: A user who needs a high-level overview of the incident's status, impact, and response timeline.
+3.  **Client/Executive**: A non-technical stakeholder who requires a plain-language summary of the business impact and resolution steps.
+
+---
+
+### 🔑 Key Features & Functionality
+- **Simulated Alert Dashboard**: A central view displaying incoming mock alerts (e.g., "Critical: Ransomware Detected").
+- **AI-Guided Workflow**: An interactive, step-by-step wizard that guides the analyst through the response process using hardcoded branching logic.
+- **Contextual Log Viewer**: A component to display simulated logs from sources like Azure Sentinel, Defender for Endpoint, and Office 365.
+- **Role-Based Views**: The interface dynamically changes to show relevant information for Analyst, Manager, and Client roles.
+- **MITRE ATT&CK Integration**: Visually tag and display relevant adversary tactics and techniques (e.g., T1486 - Data Encrypted for Impact) as they are "discovered."
+- **Interactive Containment Actions**: Buttons to perform mock actions like "Isolate Endpoints" or "Lock User Accounts."
+- **Automated Post-Incident Reporting**: Generate and export a downloadable report (PDF, TXT, or JSON) summarizing the incident timeline, actions taken, and key metrics.
+
+---
+
+### 🧱 Component Architecture
+Follow **atomic design** principles for a modular and scalable frontend.
+- **Navbar**:
+    - Contains a logo (can be a placeholder).
+    - Features a dropdown or segmented control to switch between `Analyst`, `Manager`, and `Client` views.
+    - Includes a "New Simulation" button.
+- **DashboardGrid**: A responsive grid layout to organize dashboard widgets.
+- **AlertCard**:
+    - Displays alert title, severity, timestamp, and status.
+    - Buttons: `Start Investigation`, `View Details`, `Assign to Me`.
+    - `data-testid="alert-card"`
+- **AI_AssistantPanel (Side Panel or Modal)**:
+    - Displays the current step's instructions and AI prompts (e.g., "Detected signs of ransomware. Launch guided response?").
+    - Contains action buttons (`Yes`, `No`, `Isolate Endpoints`) that drive the workflow.
+    - References playbook sections (e.g., "See Playbook 3.2 for details").
+    - `data-testid="ai-assistant-panel"`
+- **WorkflowTracker (Timeline/Checklist)**:
+    - Visualizes the 5 phases of the response: Detection, Scoping, Investigation, Remediation, Post-Incident.
+    - Marks current step, completed steps, and skipped steps.
+- **LogViewer**:
+    - A scrollable pane with filtering options (by source, timestamp).
+    - Displays mocked log entries with color-coding for severity.
+    - `data-testid="log-viewer"`
+- **AssetTable**:
+    - Lists affected assets (endpoints, users) with checkboxes for selection.
+    - Columns: `Hostname`, `IP Address`, `Status` (Affected, Isolated), `User`.
+- **ReportGenerator**:
+    - A component that compiles data from the completed workflow into a structured report.
+    - Includes an "Export as PDF" button.
+
+---
+
+### 🎨 Design System (Smart Defaults or User Branding)
+The UI should feel professional, data-dense, and authoritative, inspired by **Palo Alto Cortex XDR** and **Microsoft Azure Sentinel**. A dark theme is required.
+- **Primary Color**: A strong, accessible blue for interactive elements: `#3B82F6`
+- **Accent Colors**:
+    - Critical/Error (Red): `#EF4444`
+    - Warning (Yellow): `#F59E0B`
+    - Success (Green): `#22C55E`
+    - Informational (Cyan): `#06B6D4`
+- **Background Colors (Dark Mode)**:
+    - Base: `#111827` (Dark Slate)
+    - Elevated Surfaces (Cards/Modals): `#1F2937`
+- **Font**: **Inter** (sans-serif) for its excellent readability on screens.
+- **Spacing**: 8pt system (use multiples of 8px for margins, padding).
+- **Border Radius**: 8px for cards and inputs.
+- **Shadows**: Use subtle glows or brighter borders for focused elements instead of dark shadows.
+- **Layout Widths**:
+    - Desktop (Primary): 1440px+ (fluid)
+    - Tablet: 768px
+    - Mobile: 375px (ensure key info is readable, even if not optimized for actions).
+- **Icons**: Use a clean, modern set like **Lucide Icons** or **Heroicons**.
+- Ensure all text has a **WCAG 2.1 AA compliant** contrast ratio against the background.
+
+---
+
+### 🧬 Data Structures & Persistence
+Use local JSON files to mock the database for this MVP.
+- **`alerts.json`**:
+  ```json
+  [{
+    "id": "alert-001",
+    "title": "Ransomware Detected on 5 Endpoints",
+    "severity": "Critical",
+    "status": "New",
+    "timestamp": "2025-09-17T13:01:00Z",
+    "affected_endpoints": ["endpoint-01", "endpoint-02", "endpoint-03", "endpoint-04", "endpoint-05"],
+    "mitre_tactics": ["T1486", "T1059.001"]
+  }]
+  ```
+- **`endpoints.json`**:
+  ```json
+  [{
+    "id": "endpoint-01",
+    "hostname": "HU-FINANCE-PC01",
+    "ip_address": "10.1.5.12",
+    "user": "j.doe",
+    "status": "Affected"
+  }]
+  ```
+- **`playbook.json`** (Decision Tree):
+  ```json
+  {
+    "start_node": "node_1",
+    "nodes": {
+      "node_1": {
+        "title": "Initial Detection",
+        "ai_prompt": "Critical alert indicates ransomware. Do you want to launch the guided response playbook?",
+        "options": [
+          {"label": "Launch Playbook", "next_node": "node_2"},
+          {"label": "Ignore", "next_node": "end_ignored"}
+        ]
+      },
+      "node_2": {
+        "title": "Isolate Endpoints",
+        "ai_prompt": "Playbook 3.1 recommends immediate isolation of affected endpoints. Proceed?",
+        "options": [
+          {"label": "Isolate All 5 Endpoints", "action": "ISOLATE_ALL", "next_node": "node_3"},
+          {"label": "Skip Isolation", "next_node": "node_3_skipped"}
+        ]
+      }
+    }
+  }
+  ```
+
+---
+
+### 🔐 Security & Compliance
+Even for a simulation, model best practices.
+- **Authentication & Access Control**: The MVP is single-user. However, the component logic for role-based views (`Analyst`, `Manager`, `Client`) should be implemented to prepare for future multi-user authentication (RBAC).
+- **Secrets Management**: Use Replit Secrets for any placeholder API keys or environment variables. Do not hardcode them.
+- **Frontend Trust Model**: All "actions" (like isolating an endpoint) are simulated on the frontend. In a real app, these would be secure API calls to a backend that validates user permissions.
+- **Dependencies**: Use trusted, well-maintained libraries (e.g., React, TailwindCSS, Next.js).
+
+---
+
+### 🧪 Testing & Accessibility
+- Use `data-testid` attributes for all key interactive elements (buttons, inputs, modals, cards).
+- Ensure the entire workflow can be navigated using only a keyboard (Tab, Enter, Space, Esc).
+- Use ARIA labels for icon-only buttons and roles for dynamic regions (`aria-live` for new alerts).
+- Simulate and test all states:
+    - **Empty State**: Dashboard with no active alerts.
+    - **Loading State**: When "fetching" logs or processing an action.
+    - **Error State**: If a user tries an invalid action in the workflow.
+    - **Success State**: Confirmation toasts/messages after an action is completed.
+- Recommend **Vitest** for unit/component testing.
+
+---
+
+### 📱 Device Responsiveness
+- Design for a desktop-first experience, as this is a data-dense professional tool.
+- Use a fluid layout that adapts gracefully to tablet sizes (e.g., 768px width).
+- On mobile (375px), ensure the content is readable and vertically scrollable, even if complex interactions are deprioritized. Touch targets should be at least 44x44px.
+
+---
+
+### 🚦 3-Phase Development Roadmap
+```markdown
+**Phase 1 – MVP**
+- Build the Analyst view with the full, hardcoded ransomware simulation flow.
+- Implement the AI Assistant panel with branching logic from a local JSON file.
+- Create the simulated alert dashboard and log viewer.
+- Enable basic report generation and export to TXT or JSON.
+
+**Phase 2 – Growth**
+- Implement real user authentication (e.g., with JWT).
+- Build a lightweight backend (e.g., Express.js) to manage state and serve data.
+- Fully implement the Manager and Client views with dynamic data.
+- Add more playbook scenarios (e.g., phishing, credential compromise).
+- Enhance report export to a styled PDF.
+
+**Phase 3 – Enterprise**
+- Integrate with live APIs (e.g., Microsoft Graph Security API) to pull real (sandboxed) data.
+- Create a visual playbook editor for admins to build their own response workflows.
+- Add a full analytics dashboard tracking SOC metrics (MTTD, MTTR).
+- Implement team collaboration features (assigning incidents, commenting).
+```
+
+---
+
+### 🖼️ Branding & Inspirations
+- **Primary Inspiration**: **Palo Alto Cortex XDR** for the overall layout, dark theme, and AI-assisted feel.
+- **Secondary Inspiration**: **Microsoft Azure Sentinel** for the data visualization components and professional, clean aesthetic.
+- **Logo**: A simple placeholder is sufficient.
+- **Moodboard**: Think "command center," "data-driven," "secure," and "intelligent."
+
+---
+Generate modular, clean, accessible code. Use frameworks like React, TailwindCSS, Next.js, or Express where appropriate. Avoid unnecessary boilerplate. Prioritize real-world usability, performance, and maintainability. Use design tokens or utility classes — do not hardcode styles unless requested.

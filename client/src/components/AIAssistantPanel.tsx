@@ -28,9 +28,44 @@ export default function AIAssistantPanel({
 
   const executeActionMutation = useMutation({
     mutationFn: async (action: string) => {
-      // Simulate action execution
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      return { success: true, action };
+      let response;
+      
+      switch (action) {
+        case "Isolate All Endpoints":
+          // Get all affected endpoints from the current alert and isolate them
+          const endpointsResponse = await fetch("/api/endpoints");
+          const endpoints = await endpointsResponse.json();
+          const affectedEndpointIds = endpoints
+            .filter((ep: any) => ep.status === "Affected")
+            .map((ep: any) => ep.id);
+          
+          response = await apiRequest("POST", "/api/actions/isolate-all", { 
+            endpointIds: affectedEndpointIds 
+          });
+          break;
+          
+        case "Lock User Accounts":
+          response = await apiRequest("POST", "/api/actions/lock-accounts", {});
+          break;
+          
+        case "Analyze Network Traffic":
+          response = await apiRequest("POST", "/api/actions/analyze-traffic", { 
+            alertId 
+          });
+          break;
+          
+        case "Skip to Investigation":
+          response = await apiRequest("POST", "/api/workflow/advance", { 
+            alertId,
+            phase: "Investigation" 
+          });
+          break;
+          
+        default:
+          throw new Error(`Unknown action: ${action}`);
+      }
+      
+      return { success: true, action, data: response };
     },
     onSuccess: (data) => {
       toast({

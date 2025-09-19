@@ -181,6 +181,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/actions/analyze-traffic", async (req, res) => {
+    try {
+      const { alertId } = req.body;
+      // Simulate network traffic analysis
+      const analysisResults = {
+        suspiciousConnections: 3,
+        blockedIPs: ["192.168.1.100", "10.0.0.50"],
+        malwareSignatures: ["Emotet.Variant.A", "Ransomware.Ryuk"],
+        networkSegmentationStatus: "Partial"
+      };
+      
+      res.json({ 
+        success: true, 
+        alertId,
+        analysis: analysisResults,
+        message: "Network traffic analysis complete" 
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to analyze network traffic" });
+    }
+  });
+
+  app.post("/api/workflow/advance", async (req, res) => {
+    try {
+      const { alertId, phase } = req.body;
+      
+      // Create or update workflow session
+      const session = await storage.createWorkflowSession({
+        alert_id: alertId,
+        current_node: phase.toLowerCase() + "_phase",
+        started_at: new Date(),
+        completed_nodes: ["detection_phase"],
+        actions_taken: [{
+          timestamp: new Date().toISOString(),
+          action: `Advanced to ${phase}`,
+          details: { phase, automated: true }
+        }],
+        status: "Active",
+        user_role: "Analyst"
+      });
+      
+      res.json({ 
+        success: true, 
+        session,
+        currentPhase: phase,
+        message: `Workflow advanced to ${phase} phase` 
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to advance workflow" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

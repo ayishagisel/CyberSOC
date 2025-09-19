@@ -181,10 +181,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Reports
   app.post("/api/reports/generate", async (req, res) => {
     try {
-      const { sessionId } = req.body;
+      const { sessionId, format, userRole = 'Analyst' } = req.body;
       const report = await storage.generateReport(sessionId);
-      res.json(report);
+      
+      if (format === 'pdf') {
+        const { PDFGenerator } = await import('./pdf-generator');
+        const pdfBuffer = await PDFGenerator.generatePDF({ userRole, report });
+        
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="incident-report-${new Date().toISOString().split('T')[0]}.pdf"`);
+        res.send(pdfBuffer);
+      } else {
+        // Return JSON for other formats (json, txt)
+        res.json(report);
+      }
     } catch (error) {
+      console.error('Report generation error:', error);
       res.status(500).json({ error: "Failed to generate report" });
     }
   });

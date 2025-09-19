@@ -25,20 +25,38 @@ export default function ReportGenerator({
     mutationFn: async (format: string) => {
       const response = await apiRequest("POST", "/api/reports/generate", {
         sessionId: "current",
-        format
+        format,
+        userRole
       });
-      return response.json();
+      
+      if (format === 'pdf') {
+        // For PDF, return the response directly (binary data)
+        return response;
+      } else {
+        // For JSON/TXT, parse as JSON
+        return response.json();
+      }
     },
-    onSuccess: (data, format) => {
-      // Simulate file download
-      const blob = new Blob([JSON.stringify(data, null, 2)], {
-        type: format === "pdf" ? "application/pdf" : 
-             format === "json" ? "application/json" : "text/plain"
-      });
+    onSuccess: async (data, format) => {
+      let blob: Blob;
+      
+      if (format === 'pdf') {
+        // For PDF, data is the Response object with binary content
+        const arrayBuffer = await (data as Response).arrayBuffer();
+        blob = new Blob([arrayBuffer], { type: "application/pdf" });
+      } else {
+        // For JSON/TXT, data is the parsed JSON object
+        const content = format === "json" ? JSON.stringify(data, null, 2) : JSON.stringify(data);
+        blob = new Blob([content], {
+          type: format === "json" ? "application/json" : "text/plain"
+        });
+      }
+      
+      // Create download link
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `incident-report.${format}`;
+      a.download = `incident-report-${new Date().toISOString().split('T')[0]}.${format}`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -46,7 +64,7 @@ export default function ReportGenerator({
 
       toast({
         title: "Report Generated",
-        description: `Report has been exported as ${format.toUpperCase()}.`,
+        description: `Professional ${userRole.toLowerCase()} report exported as ${format.toUpperCase()}.`,
       });
     },
     onError: () => {

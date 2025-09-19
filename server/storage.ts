@@ -26,6 +26,7 @@ export interface IStorage {
   // Workflow Sessions
   createWorkflowSession(session: Omit<WorkflowSession, "id">): Promise<WorkflowSession>;
   getWorkflowSession(id: string): Promise<WorkflowSession | undefined>;
+  getWorkflowSessionByAlertId(alertId: string): Promise<WorkflowSession | undefined>;
   updateWorkflowSession(id: string, updates: Partial<WorkflowSession>): Promise<WorkflowSession | undefined>;
   clearAllWorkflowSessions(): Promise<void>;
   resetEndpointsToInitialState(): Promise<void>;
@@ -127,26 +128,39 @@ export class FileStorage implements IStorage {
   }
 
   async createWorkflowSession(session: Omit<WorkflowSession, "id">): Promise<WorkflowSession> {
+    const sessions = await this.readJsonFile<WorkflowSession>("workflow_sessions.json");
     const newSession: WorkflowSession = {
       ...session,
       id: randomUUID(),
     };
     
-    // For now, store in memory as this is a demo
+    sessions.push(newSession);
+    await this.writeJsonFile("workflow_sessions.json", sessions);
     return newSession;
   }
 
   async getWorkflowSession(id: string): Promise<WorkflowSession | undefined> {
-    // For demo purposes, return a mock session
-    return undefined;
+    const sessions = await this.readJsonFile<WorkflowSession>("workflow_sessions.json");
+    return sessions.find(session => session.id === id);
+  }
+
+  async getWorkflowSessionByAlertId(alertId: string): Promise<WorkflowSession | undefined> {
+    const sessions = await this.readJsonFile<WorkflowSession>("workflow_sessions.json");
+    return sessions.find(session => session.alert_id === alertId);
   }
 
   async updateWorkflowSession(id: string, updates: Partial<WorkflowSession>): Promise<WorkflowSession | undefined> {
-    // For demo purposes
-    return undefined;
+    const sessions = await this.readJsonFile<WorkflowSession>("workflow_sessions.json");
+    const index = sessions.findIndex(session => session.id === id);
+    if (index === -1) return undefined;
+
+    sessions[index] = { ...sessions[index], ...updates };
+    await this.writeJsonFile("workflow_sessions.json", sessions);
+    return sessions[index];
   }
 
   async generateReport(sessionId: string): Promise<Report> {
+    const reports = await this.readJsonFile<Report>("reports.json");
     const report: Report = {
       id: randomUUID(),
       session_id: sessionId,
@@ -180,17 +194,26 @@ export class FileStorage implements IStorage {
       ]
     };
 
+    // Persist report to file to match DatabaseStorage behavior
+    reports.push(report);
+    await this.writeJsonFile("reports.json", reports);
+    
     return report;
   }
 
   async clearAllWorkflowSessions(): Promise<void> {
-    // For demo purposes - no-op in file storage
-    return;
+    // Clear all workflow sessions by writing empty array
+    await this.writeJsonFile("workflow_sessions.json", []);
   }
 
   async resetEndpointsToInitialState(): Promise<void> {
-    // For demo purposes - no-op in file storage
-    return;
+    // Reset all endpoints to Normal status to match DatabaseStorage behavior
+    const endpoints = await this.readJsonFile<Endpoint>("endpoints.json");
+    const updatedEndpoints = endpoints.map(endpoint => ({
+      ...endpoint,
+      status: "Normal" as const
+    }));
+    await this.writeJsonFile("endpoints.json", updatedEndpoints);
   }
 
   async applyScenario(scenario: string): Promise<{ activeAlertId: string; scenarioName: string }> {
@@ -204,7 +227,31 @@ export class FileStorage implements IStorage {
     const config = scenarioMap[scenario as keyof typeof scenarioMap];
     if (!config) throw new Error(`Unknown scenario: ${scenario}`);
     
-    // For file storage, this is a simplified implementation
+    // Update endpoints and alerts to match DatabaseStorage behavior
+    const endpoints = await this.readJsonFile<Endpoint>("endpoints.json");
+    const alerts = await this.readJsonFile<Alert>("alerts.json");
+    
+    // Reset all endpoints to Normal first
+    const resetEndpoints = endpoints.map(ep => ({ ...ep, status: "Normal" as const }));
+    
+    // Set affected endpoints for this scenario
+    const updatedEndpoints = resetEndpoints.map(ep => 
+      config.affectedEndpoints.includes(ep.id) 
+        ? { ...ep, status: "Affected" as const }
+        : ep
+    );
+    
+    // Update the target alert to make it "fresh" and active
+    const updatedAlerts = alerts.map(alert => 
+      alert.id === config.alertId
+        ? { ...alert, status: "New" as const, timestamp: new Date().toISOString() }
+        : alert
+    );
+    
+    // Write updated data back to files
+    await this.writeJsonFile("endpoints.json", updatedEndpoints);
+    await this.writeJsonFile("alerts.json", updatedAlerts);
+    
     return { activeAlertId: config.alertId, scenarioName: config.name };
   }
 }

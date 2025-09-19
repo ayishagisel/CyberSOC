@@ -14,36 +14,312 @@
           {
             "label": "Begin Containment Protocol",
             "action": "START_CONTAINMENT",
-            "next_node": "containment_phase"
+            "next_node": "scoping_phase"
           },
           {
             "label": "Gather More Intelligence First",
             "action": "INTELLIGENCE_GATHERING",
-            "next_node": "intelligence_phase"
+            "next_node": "scoping_phase"
           }
         ],
         "mitre_techniques": ["T1486", "T1059.001"],
         "playbook_reference": "NIST CSF: DE.AE-1, DE.AE-2"
       },
-      "containment_phase": {
-        "id": "containment_phase",
-        "title": "Immediate Containment",
-        "ai_prompt": "Execute immediate containment measures to isolate infected systems and prevent further spread of the ransomware.",
+      "scoping_phase": {
+        "id": "scoping_phase",
+        "title": "Determine Impact and Scope",
+        "ai_prompt": "Assess the full scope of the ransomware attack. Identify all affected systems and evaluate the extent of data encryption to determine response priorities.",
+        "phase": "Scoping",
+        "options": [
+          {
+            "label": "Complete Full Network Scan",
+            "action": "NETWORK_SCAN",
+            "next_node": "investigation_phase"
+          },
+          {
+            "label": "Focus on Critical Systems First",
+            "action": "PRIORITIZE_CRITICAL",
+            "next_node": "investigation_phase"
+          }
+        ],
+        "mitre_techniques": ["T1083", "T1057"],
+        "playbook_reference": "NIST CSF: DE.AE-3, DE.AE-4"
+      },
+      "investigation_phase": {
+        "id": "investigation_phase",
+        "title": "Analyze Attack Vectors",
+        "ai_prompt": "Investigate how the ransomware entered the network and spread to multiple systems. Analyze attack patterns to prevent reinfection.",
+        "phase": "Investigation",
+        "options": [
+          {
+            "label": "Forensic Analysis of Patient Zero",
+            "action": "FORENSIC_ANALYSIS",
+            "next_node": "remediation_phase"
+          },
+          {
+            "label": "Network Traffic Analysis",
+            "action": "TRAFFIC_ANALYSIS",
+            "next_node": "remediation_phase"
+          }
+        ],
+        "mitre_techniques": ["T1055", "T1021.001"],
+        "playbook_reference": "NIST CSF: DE.DP-4, DE.DP-5"
+      },
+      "remediation_phase": {
+        "id": "remediation_phase",
+        "title": "Contain and Eradicate Threat",
+        "ai_prompt": "Execute immediate containment measures to isolate infected systems and begin recovery procedures to restore business operations.",
         "phase": "Remediation",
         "options": [
           {
             "label": "Isolate All Affected Endpoints",
             "action": "ISOLATE_ENDPOINTS",
-            "next_node": "isolation_complete"
+            "next_node": "post_incident_phase"
           },
           {
-            "label": "Selective Isolation Based on Criticality",
-            "action": "SELECTIVE_ISOLATION",
-            "next_node": "analysis_phase"
+            "label": "Begin System Recovery Process",
+            "action": "SYSTEM_RECOVERY",
+            "next_node": "post_incident_phase"
           }
         ],
         "mitre_techniques": ["T1486"],
         "playbook_reference": "NIST CSF: RS.RP-1, RS.CO-2"
+      },
+      "post_incident_phase": {
+        "id": "post_incident_phase",
+        "title": "Document and Improve",
+        "ai_prompt": "Document lessons learned from the ransomware incident and implement improvements to prevent future attacks.",
+        "phase": "Post-Incident",
+        "options": [
+          {
+            "label": "Generate Incident Report",
+            "action": "GENERATE_REPORT",
+            "next_node": null
+          },
+          {
+            "label": "Update Security Policies",
+            "action": "UPDATE_POLICIES",
+            "next_node": null
+          }
+        ],
+        "mitre_techniques": [],
+        "playbook_reference": "NIST CSF: RS.IM-1, RS.IM-2"
+      }
+    }
+  },
+  {
+    "id": "credential-compromise-response",
+    "name": "Credential Compromise Response Playbook",
+    "description": "Playbook for responding to credential compromise and lateral movement incidents",
+    "start_node": "detection_phase",
+    "nodes": {
+      "detection_phase": {
+        "id": "detection_phase",
+        "title": "Credential Compromise Detection",
+        "ai_prompt": "Compromised credentials have been detected with evidence of lateral movement. The AI assistant recommends immediate account lockdown and network segmentation to contain the threat.",
+        "phase": "Detection",
+        "options": [
+          {
+            "label": "Lock Compromised Accounts Immediately",
+            "action": "LOCK_ACCOUNTS",
+            "next_node": "scoping_phase"
+          },
+          {
+            "label": "Monitor Activity Before Acting",
+            "action": "MONITOR_ACTIVITY",
+            "next_node": "scoping_phase"
+          }
+        ],
+        "mitre_techniques": ["T1078", "T1021.001"],
+        "playbook_reference": "NIST CSF: DE.AE-3, RS.RP-1"
+      },
+      "scoping_phase": {
+        "id": "scoping_phase",
+        "title": "Assess Compromise Scope",
+        "ai_prompt": "Determine the full extent of the credential compromise. Identify all systems accessed with compromised credentials and assess potential data exposure.",
+        "phase": "Scoping",
+        "options": [
+          {
+            "label": "Audit All Account Activity",
+            "action": "AUDIT_ACTIVITY",
+            "next_node": "investigation_phase"
+          },
+          {
+            "label": "Check for Privilege Escalation",
+            "action": "CHECK_ESCALATION",
+            "next_node": "investigation_phase"
+          }
+        ],
+        "mitre_techniques": ["T1078.003", "T1087"],
+        "playbook_reference": "NIST CSF: DE.AE-4, DE.CM-1"
+      },
+      "investigation_phase": {
+        "id": "investigation_phase",
+        "title": "Investigate Attack Methods",
+        "ai_prompt": "Analyze how the credentials were compromised and what actions the attacker took. Look for signs of data exfiltration or system manipulation.",
+        "phase": "Investigation",
+        "options": [
+          {
+            "label": "Analyze Login Patterns",
+            "action": "ANALYZE_LOGINS",
+            "next_node": "remediation_phase"
+          },
+          {
+            "label": "Review Access Logs",
+            "action": "REVIEW_LOGS",
+            "next_node": "remediation_phase"
+          }
+        ],
+        "mitre_techniques": ["T1078", "T1021.001"],
+        "playbook_reference": "NIST CSF: DE.DP-4, DE.DP-5"
+      },
+      "remediation_phase": {
+        "id": "remediation_phase",
+        "title": "Contain Lateral Movement",
+        "ai_prompt": "Implement network segmentation and access controls to prevent further lateral movement. Isolate affected systems and revoke compromised sessions.",
+        "phase": "Remediation",
+        "options": [
+          {
+            "label": "Implement Network Segmentation",
+            "action": "SEGMENT_NETWORK",
+            "next_node": "post_incident_phase"
+          },
+          {
+            "label": "Revoke All Active Sessions",
+            "action": "REVOKE_SESSIONS",
+            "next_node": "post_incident_phase"
+          }
+        ],
+        "mitre_techniques": ["T1055", "T1021.001"],
+        "playbook_reference": "NIST CSF: RS.CO-2, RS.CO-3"
+      },
+      "post_incident_phase": {
+        "id": "post_incident_phase",
+        "title": "Strengthen Access Controls",
+        "ai_prompt": "Review and strengthen access controls to prevent future credential compromise incidents. Implement additional security measures and update policies.",
+        "phase": "Post-Incident",
+        "options": [
+          {
+            "label": "Implement Multi-Factor Authentication",
+            "action": "ENABLE_MFA",
+            "next_node": null
+          },
+          {
+            "label": "Update Password Policies",
+            "action": "UPDATE_PASSWORDS",
+            "next_node": null
+          }
+        ],
+        "mitre_techniques": [],
+        "playbook_reference": "NIST CSF: RS.IM-1, PR.AC-1"
+      }
+    }
+  },
+  {
+    "id": "phishing-response",
+    "name": "Phishing Response Playbook", 
+    "description": "Comprehensive playbook for responding to phishing attacks and email-based threats",
+    "start_node": "detection_phase",
+    "nodes": {
+      "detection_phase": {
+        "id": "detection_phase",
+        "title": "Phishing Detection and Triage",
+        "ai_prompt": "A suspicious phishing email has been detected and reported. The AI assistant recommends immediate assessment to determine the scope and block further spread.",
+        "phase": "Detection",
+        "options": [
+          {
+            "label": "Block Email and Quarantine",
+            "action": "BLOCK_EMAIL",
+            "next_node": "scoping_phase"
+          },
+          {
+            "label": "Analyze Email Headers First",
+            "action": "ANALYZE_HEADERS",
+            "next_node": "scoping_phase"
+          }
+        ],
+        "mitre_techniques": ["T1566.001", "T1566.002"],
+        "playbook_reference": "NIST CSF: DE.AE-1, DE.AE-2"
+      },
+      "scoping_phase": {
+        "id": "scoping_phase",
+        "title": "Assess Phishing Campaign Scope",
+        "ai_prompt": "Determine how many users received the phishing email and identify any who may have clicked links or downloaded attachments.",
+        "phase": "Scoping",
+        "options": [
+          {
+            "label": "Search All Email Logs",
+            "action": "SEARCH_EMAIL_LOGS",
+            "next_node": "investigation_phase"
+          },
+          {
+            "label": "Survey Affected Users",
+            "action": "SURVEY_USERS",
+            "next_node": "investigation_phase"
+          }
+        ],
+        "mitre_techniques": ["T1566", "T1204.001"],
+        "playbook_reference": "NIST CSF: DE.AE-3, DE.AE-4"
+      },
+      "investigation_phase": {
+        "id": "investigation_phase",
+        "title": "Analyze Phishing Attack",
+        "ai_prompt": "Investigate the phishing email's payload, links, and attachments to understand the attacker's objectives and methods.",
+        "phase": "Investigation",
+        "options": [
+          {
+            "label": "Analyze Malicious Links",
+            "action": "ANALYZE_LINKS",
+            "next_node": "remediation_phase"
+          },
+          {
+            "label": "Examine Email Attachments",
+            "action": "EXAMINE_ATTACHMENTS",
+            "next_node": "remediation_phase"
+          }
+        ],
+        "mitre_techniques": ["T1566.001", "T1204.002"],
+        "playbook_reference": "NIST CSF: DE.DP-4, DE.DP-5"
+      },
+      "remediation_phase": {
+        "id": "remediation_phase",
+        "title": "Remove Threat and Protect Users",
+        "ai_prompt": "Remove the phishing threat from all user mailboxes and implement protections to prevent similar attacks.",
+        "phase": "Remediation",
+        "options": [
+          {
+            "label": "Remove Email from All Mailboxes",
+            "action": "REMOVE_EMAIL",
+            "next_node": "post_incident_phase"
+          },
+          {
+            "label": "Reset Affected User Passwords",
+            "action": "RESET_PASSWORDS",
+            "next_node": "post_incident_phase"
+          }
+        ],
+        "mitre_techniques": ["T1566"],
+        "playbook_reference": "NIST CSF: RS.RP-1, RS.CO-2"
+      },
+      "post_incident_phase": {
+        "id": "post_incident_phase",
+        "title": "Enhance Email Security",
+        "ai_prompt": "Update email security policies and provide user training to prevent future phishing attacks from being successful.",
+        "phase": "Post-Incident",
+        "options": [
+          {
+            "label": "Update Email Filters",
+            "action": "UPDATE_FILTERS",
+            "next_node": null
+          },
+          {
+            "label": "Conduct Security Awareness Training",
+            "action": "SECURITY_TRAINING",
+            "next_node": null
+          }
+        ],
+        "mitre_techniques": [],
+        "playbook_reference": "NIST CSF: RS.IM-1, PR.AT-1"
       }
     }
   }

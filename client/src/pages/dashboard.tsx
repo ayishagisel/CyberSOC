@@ -52,7 +52,19 @@ export default function Dashboard() {
       
       <div className="flex h-screen overflow-hidden">
         <WorkflowTracker 
-          currentPhase={currentNode?.phase || "Detection"}
+          currentPhase={
+            // Map current node ID to phase name for UI display
+            (() => {
+              const nodeToPhaseMap: Record<string, string> = {
+                "detection_phase": "Detection",
+                "scoping_phase": "Scoping",
+                "investigation_phase": "Investigation", 
+                "remediation_phase": "Remediation",
+                "post_incident_phase": "Post-Incident"
+              };
+              return nodeToPhaseMap[workflow?.current_node || ""] || "Detection";
+            })()
+          }
           completedPhases={
             // Convert node IDs to phase names for UI display
             (workflow?.completed_nodes || []).map(nodeId => {

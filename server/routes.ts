@@ -114,12 +114,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Workflow sessions
+  app.get("/api/workflow-sessions/:alertId", async (req, res) => {
+    try {
+      const { alertId } = req.params;
+      const session = await storage.getWorkflowSessionByAlertId(alertId);
+      if (!session) {
+        return res.status(404).json({ error: "No workflow session found for this alert" });
+      }
+      res.json(session);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch workflow session" });
+    }
+  });
+
   app.post("/api/workflow-sessions", async (req, res) => {
     try {
       const session = await storage.createWorkflowSession(req.body);
       res.json(session);
     } catch (error) {
       res.status(500).json({ error: "Failed to create workflow session" });
+    }
+  });
+
+  app.put("/api/workflow-sessions/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const session = await storage.updateWorkflowSession(id, req.body);
+      if (!session) {
+        return res.status(404).json({ error: "Workflow session not found" });
+      }
+      res.json(session);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update workflow session" });
     }
   });
 

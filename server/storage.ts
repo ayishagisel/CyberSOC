@@ -263,6 +263,11 @@ export class DatabaseStorage implements IStorage {
     return session || undefined;
   }
 
+  async getWorkflowSessionByAlertId(alertId: string): Promise<WorkflowSession | undefined> {
+    const [session] = await db.select().from(workflow_sessions).where(eq(workflow_sessions.alert_id, alertId));
+    return session || undefined;
+  }
+
   async updateWorkflowSession(id: string, updates: Partial<WorkflowSession>): Promise<WorkflowSession | undefined> {
     const [session] = await db
       .update(workflow_sessions)

@@ -5,6 +5,7 @@ interface WorkflowTrackerProps {
   currentPhase: string;
   completedPhases: string[];
   mitreAttackTechniques: string[];
+  onPhaseClick?: (phaseId: string) => void;
 }
 
 const WORKFLOW_PHASES = [
@@ -23,7 +24,8 @@ const MITRE_TECHNIQUES = [
 export default function WorkflowTracker({ 
   currentPhase, 
   completedPhases,
-  mitreAttackTechniques 
+  mitreAttackTechniques,
+  onPhaseClick
 }: WorkflowTrackerProps) {
   const getPhaseStatus = (phase: string) => {
     if (completedPhases.includes(phase)) return "completed";
@@ -52,9 +54,11 @@ export default function WorkflowTracker({
           return (
             <div
               key={phase.id}
-              className={`workflow-step ${status} p-3 rounded-lg border-l-4 ${
+              onClick={() => onPhaseClick?.(phase.id)}
+              className={`workflow-step ${status} p-3 rounded-lg border-l-4 cursor-pointer hover:bg-muted/50 transition-colors ${
                 status === "active" ? "border-primary" : "border-muted"
               }`}
+              data-testid={`workflow-phase-${phase.id.toLowerCase()}`}
             >
               <div className="flex items-center justify-between">
                 <span className="font-medium">{phase.name}</span>

@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Shield, User } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface NavbarProps {
   userRole: "Analyst" | "Manager" | "Client";
@@ -7,6 +8,17 @@ interface NavbarProps {
 }
 
 export default function Navbar({ userRole, onRoleChange }: NavbarProps) {
+  const { toast } = useToast();
+
+  const handleNewSimulation = () => {
+    toast({
+      title: "New Simulation Started",
+      description: "A fresh ransomware incident scenario has been loaded.",
+    });
+    // Reset to first alert or refresh the page state
+    window.location.reload();
+  };
+
   return (
     <nav className="bg-card border-b border-border px-6 py-4">
       <div className="flex items-center justify-between">
@@ -36,6 +48,7 @@ export default function Navbar({ userRole, onRoleChange }: NavbarProps) {
         
         <div className="flex items-center space-x-4">
           <Button 
+            onClick={handleNewSimulation}
             className="bg-primary hover:bg-primary/90 text-primary-foreground"
             data-testid="new-simulation-btn"
           >

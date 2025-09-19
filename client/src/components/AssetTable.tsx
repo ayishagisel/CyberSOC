@@ -62,6 +62,45 @@ export default function AssetTable({ endpoints, selectedAlert }: AssetTableProps
     },
   });
 
+  const lockAccountsMutation = useMutation({
+    mutationFn: async () => {
+      await apiRequest("POST", "/api/actions/lock-accounts", {});
+    },
+    onSuccess: () => {
+      toast({
+        title: "Accounts Locked",
+        description: "All user accounts have been locked to prevent lateral movement.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to lock accounts.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const reconnectEndpointMutation = useMutation({
+    mutationFn: async (endpointId: string) => {
+      await apiRequest("POST", "/api/actions/reconnect-endpoint", { endpointId });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/endpoints"] });
+      toast({
+        title: "Endpoint Reconnected",
+        description: "The endpoint has been reconnected to the network.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to reconnect endpoint.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleSelectEndpoint = (endpointId: string) => {
     setSelectedEndpoints(prev =>
       prev.includes(endpointId)
@@ -105,11 +144,13 @@ export default function AssetTable({ endpoints, selectedAlert }: AssetTableProps
             {isolateAllMutation.isPending ? "Isolating..." : "Isolate Selected"}
           </Button>
           <Button
+            onClick={() => lockAccountsMutation.mutate()}
+            disabled={lockAccountsMutation.isPending}
             variant="outline"
             className="border-warning text-warning hover:bg-warning/10"
             data-testid="lock-accounts-btn"
           >
-            Lock Accounts
+            {lockAccountsMutation.isPending ? "Locking..." : "Lock Accounts"}
           </Button>
         </div>
       </div>
@@ -166,12 +207,14 @@ export default function AssetTable({ endpoints, selectedAlert }: AssetTableProps
                     </Button>
                   ) : (
                     <Button
+                      onClick={() => reconnectEndpointMutation.mutate(endpoint.id)}
+                      disabled={reconnectEndpointMutation.isPending}
                       variant="link"
                       size="sm"
                       className="text-muted-foreground"
                       data-testid={`reconnect-btn-${endpoint.id}`}
                     >
-                      Reconnect
+                      {reconnectEndpointMutation.isPending ? "Reconnecting..." : "Reconnect"}
                     </Button>
                   )}
                 </td>

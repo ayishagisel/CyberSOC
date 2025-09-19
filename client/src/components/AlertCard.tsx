@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Clock, Shield, Users } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import type { Alert } from "@shared/schema";
 
 interface AlertCardProps {
@@ -16,6 +17,36 @@ export default function AlertCard({
   isSelected, 
   userRole 
 }: AlertCardProps) {
+  const { toast } = useToast();
+
+  const handleViewDetails = () => {
+    toast({
+      title: "Alert Details",
+      description: `Viewing detailed information for: ${alert.title}`,
+    });
+  };
+
+  const handleAssignToMe = () => {
+    toast({
+      title: "Alert Assigned",
+      description: `${alert.title} has been assigned to you.`,
+    });
+  };
+
+  const handleViewStatus = () => {
+    toast({
+      title: "Status Update",
+      description: "Incident response team is actively working on containment.",
+    });
+  };
+
+  const handleGetUpdates = () => {
+    toast({
+      title: "Updates Requested",
+      description: "You will receive email updates on this incident's progress.",
+    });
+  };
+
   const getSeverityColor = (severity: string) => {
     switch (severity) {
       case "Critical": return "bg-critical border-critical text-critical-foreground";
@@ -104,12 +135,14 @@ export default function AlertCard({
                 Start Investigation
               </Button>
               <Button 
+                onClick={handleViewDetails}
                 variant="secondary"
                 data-testid="view-details-btn"
               >
                 View Details
               </Button>
               <Button 
+                onClick={handleAssignToMe}
                 variant="outline"
                 data-testid="assign-to-me-btn"
               >
@@ -120,6 +153,7 @@ export default function AlertCard({
           
           {userRole === "Manager" && (
             <Button 
+              onClick={handleViewStatus}
               variant="secondary"
               data-testid="view-status-btn"
             >
@@ -129,6 +163,7 @@ export default function AlertCard({
 
           {userRole === "Client" && (
             <Button 
+              onClick={handleGetUpdates}
               variant="outline"
               data-testid="get-updates-btn"
             >

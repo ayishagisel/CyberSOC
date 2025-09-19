@@ -158,6 +158,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/actions/lock-accounts", async (req, res) => {
+    try {
+      // Simulate locking all user accounts to prevent lateral movement
+      res.json({ 
+        success: true, 
+        message: "All user accounts have been locked",
+        lockedAccounts: 15
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to lock accounts" });
+    }
+  });
+
+  app.post("/api/actions/reconnect-endpoint", async (req, res) => {
+    try {
+      const { endpointId } = req.body;
+      const endpoint = await storage.updateEndpoint(endpointId, { status: "Normal" });
+      res.json({ success: true, endpoint });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to reconnect endpoint" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

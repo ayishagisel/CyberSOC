@@ -149,6 +149,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Reset simulation - clear all workflow sessions and apply selected scenario
+  app.post("/api/workflow-sessions/reset", async (req, res) => {
+    try {
+      const { scenario } = req.body;
+      
+      // Validate scenario
+      const validScenarios = ["ransomware", "credential-compromise", "phishing"];
+      if (!scenario || !validScenarios.includes(scenario)) {
+        return res.status(400).json({ error: "Invalid scenario. Must be one of: " + validScenarios.join(", ") });
+      }
+      
+      // Clear all existing workflow sessions for fresh start
+      await storage.clearAllWorkflowSessions();
+      
+      // Apply the selected scenario
+      const scenarioResult = await storage.applyScenario(scenario);
+      
+      res.json({ 
+        success: true, 
+        scenario,
+        activeAlertId: scenarioResult.activeAlertId,
+        message: `${scenarioResult.scenarioName} simulation started successfully.` 
+      });
+    } catch (error) {
+      console.error("Failed to reset simulation:", error);
+      res.status(500).json({ error: "Failed to reset simulation" });
+    }
+  });
+
   // Reports
   app.post("/api/reports/generate", async (req, res) => {
     try {

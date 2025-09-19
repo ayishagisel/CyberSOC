@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Shield, User } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
+import NewSimulationDialog from "@/components/NewSimulationDialog";
 
 interface NavbarProps {
   userRole: "Analyst" | "Manager" | "Client";
@@ -8,16 +9,7 @@ interface NavbarProps {
 }
 
 export default function Navbar({ userRole, onRoleChange }: NavbarProps) {
-  const { toast } = useToast();
-
-  const handleNewSimulation = () => {
-    toast({
-      title: "New Simulation Started",
-      description: "A fresh ransomware incident scenario has been loaded.",
-    });
-    // Reset to first alert or refresh the page state
-    window.location.reload();
-  };
+  const [showNewSimulationDialog, setShowNewSimulationDialog] = useState(false);
 
   return (
     <nav className="bg-card border-b border-border px-6 py-4">
@@ -48,12 +40,17 @@ export default function Navbar({ userRole, onRoleChange }: NavbarProps) {
         
         <div className="flex items-center space-x-4">
           <Button 
-            onClick={handleNewSimulation}
+            onClick={() => setShowNewSimulationDialog(true)}
             className="bg-primary hover:bg-primary/90 text-primary-foreground"
             data-testid="new-simulation-btn"
           >
             New Simulation
           </Button>
+          
+          <NewSimulationDialog 
+            open={showNewSimulationDialog}
+            onOpenChange={setShowNewSimulationDialog}
+          />
           <div className="w-8 h-8 bg-muted rounded-full flex items-center justify-center">
             <User className="w-4 h-4" />
           </div>

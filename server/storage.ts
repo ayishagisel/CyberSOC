@@ -27,6 +27,9 @@ export interface IStorage {
   createWorkflowSession(session: Omit<WorkflowSession, "id">): Promise<WorkflowSession>;
   getWorkflowSession(id: string): Promise<WorkflowSession | undefined>;
   updateWorkflowSession(id: string, updates: Partial<WorkflowSession>): Promise<WorkflowSession | undefined>;
+  clearAllWorkflowSessions(): Promise<void>;
+  resetEndpointsToInitialState(): Promise<void>;
+  applyScenario(scenario: string): Promise<{ activeAlertId: string; scenarioName: string }>;
 
   // Reports
   generateReport(sessionId: string): Promise<Report>;
@@ -179,6 +182,31 @@ export class FileStorage implements IStorage {
 
     return report;
   }
+
+  async clearAllWorkflowSessions(): Promise<void> {
+    // For demo purposes - no-op in file storage
+    return;
+  }
+
+  async resetEndpointsToInitialState(): Promise<void> {
+    // For demo purposes - no-op in file storage
+    return;
+  }
+
+  async applyScenario(scenario: string): Promise<{ activeAlertId: string; scenarioName: string }> {
+    // Map scenarios to alert IDs and configure endpoints
+    const scenarioMap = {
+      "ransomware": { alertId: "alert-001", name: "Ransomware Attack", affectedEndpoints: ["endpoint-01", "endpoint-02", "endpoint-03", "endpoint-04", "endpoint-05"] },
+      "credential-compromise": { alertId: "alert-004", name: "Credential Compromise", affectedEndpoints: ["endpoint-03", "endpoint-06", "endpoint-07"] },
+      "phishing": { alertId: "alert-005", name: "Phishing Campaign", affectedEndpoints: ["endpoint-01", "endpoint-02"] }
+    };
+    
+    const config = scenarioMap[scenario as keyof typeof scenarioMap];
+    if (!config) throw new Error(`Unknown scenario: ${scenario}`);
+    
+    // For file storage, this is a simplified implementation
+    return { activeAlertId: config.alertId, scenarioName: config.name };
+  }
 }
 
 // Reference: Drizzle blueprint integration for database setup
@@ -318,6 +346,69 @@ export class DatabaseStorage implements IStorage {
       .returning();
     
     return report;
+  }
+
+  async clearAllWorkflowSessions(): Promise<void> {
+    await db.delete(workflow_sessions);
+  }
+
+  async resetEndpointsToInitialState(): Promise<void> {
+    // Reset all endpoints to Normal status (their initial state)
+    await db.update(endpoints).set({ status: "Normal" });
+  }
+
+  async applyScenario(scenario: string): Promise<{ activeAlertId: string; scenarioName: string }> {
+    // Map scenarios to alert IDs and their configurations
+    const scenarioMap = {
+      "ransomware": {
+        alertId: "alert-001",
+        name: "Ransomware Attack",
+        affectedEndpoints: ["endpoint-01", "endpoint-02", "endpoint-03", "endpoint-04", "endpoint-05"],
+        status: "New" as const
+      },
+      "credential-compromise": {
+        alertId: "alert-004", 
+        name: "Credential Compromise",
+        affectedEndpoints: ["endpoint-03", "endpoint-06", "endpoint-07"],
+        status: "New" as const
+      },
+      "phishing": {
+        alertId: "alert-005",
+        name: "Phishing Campaign", 
+        affectedEndpoints: ["endpoint-01", "endpoint-02"],
+        status: "New" as const
+      }
+    };
+    
+    const config = scenarioMap[scenario as keyof typeof scenarioMap];
+    if (!config) throw new Error(`Unknown scenario: ${scenario}`);
+    
+    // Reset all endpoints to Normal first
+    await db.update(endpoints).set({ status: "Normal" });
+    
+    // Set affected endpoints for this scenario
+    if (config.affectedEndpoints.length > 0) {
+      await db.update(endpoints)
+        .set({ status: "Affected" })
+        .where(eq(endpoints.id, config.affectedEndpoints[0]));
+      
+      // Update remaining endpoints one by one to avoid complex where clause
+      for (const endpointId of config.affectedEndpoints.slice(1)) {
+        await db.update(endpoints)
+          .set({ status: "Affected" })
+          .where(eq(endpoints.id, endpointId));
+      }
+    }
+    
+    // Update the target alert to make it "fresh" and active
+    await db.update(alerts)
+      .set({ 
+        status: config.status,
+        timestamp: new Date() // Set current timestamp to make it appear as newest
+      })
+      .where(eq(alerts.id, config.alertId));
+    
+    return { activeAlertId: config.alertId, scenarioName: config.name };
   }
 }
 

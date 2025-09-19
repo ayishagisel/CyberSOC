@@ -7,6 +7,7 @@ import AssetTable from "@/components/AssetTable";
 import LogViewer from "@/components/LogViewer";
 import AIAssistantPanel from "@/components/AIAssistantPanel";
 import ReportGenerator from "@/components/ReportGenerator";
+import BusinessImpactMetrics from "@/components/BusinessImpactMetrics";
 import type { Alert, Endpoint, LogEntry } from "@shared/schema";
 import { useWorkflow } from "@/hooks/use-workflow";
 
@@ -132,6 +133,14 @@ export default function Dashboard() {
                 
                 <LogViewer logs={logs} />
               </>
+            )}
+            
+            {(userRole === "Manager" || userRole === "Client") && (
+              <BusinessImpactMetrics 
+                selectedAlert={activeAlert}
+                endpoints={endpoints}
+                userRole={userRole}
+              />
             )}
 
             <ReportGenerator 

@@ -94,7 +94,7 @@ export const workflowSessionSchema = z.object({
 // Report Schema
 export const reportSchema = z.object({
   id: z.string(),
-  session_id: z.string(),
+  session_id: z.string().nullable(),
   generated_at: z.string(),
   incident_summary: z.object({
     title: z.string(),
@@ -180,7 +180,7 @@ export const workflow_sessions = pgTable('workflow_sessions', {
 
 export const reports = pgTable('reports', {
   id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
-  session_id: varchar('session_id').notNull(),
+  session_id: varchar('session_id'),
   generated_at: timestamp('generated_at').notNull().defaultNow(),
   incident_summary: json('incident_summary').notNull(),
   timeline: json('timeline').notNull(),

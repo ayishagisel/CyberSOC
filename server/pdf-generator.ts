@@ -297,46 +297,76 @@ export class PDFGenerator {
   }
 
   static async generatePDF(options: PDFGenerationOptions): Promise<Buffer> {
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-gpu',
-        '--no-first-run',
-        '--no-zygote',
-        '--single-process'
-      ]
-    });
-
     try {
-      const page = await browser.newPage();
-      await page.setContent(await this.createHTML(options), { 
-        waitUntil: 'networkidle0' 
+      const browser = await puppeteer.launch({
+        headless: 'new',
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-gpu',
+          '--no-first-run',
+          '--no-zygote',
+          '--single-process',
+          '--disable-extensions',
+          '--disable-plugins',
+          '--disable-background-timer-throttling',
+          '--disable-backgrounding-occluded-windows',
+          '--disable-renderer-backgrounding',
+          '--disable-features=VizDisplayCompositor'
+        ]
       });
 
-      const pdfBuffer = await page.pdf({
-        format: 'A4',
-        printBackground: true,
-        margin: {
-          top: '20mm',
-          right: '15mm',
-          bottom: '20mm',
-          left: '15mm'
-        },
-        displayHeaderFooter: true,
-        headerTemplate: '<div></div>',
-        footerTemplate: `
-          <div style="font-size: 10px; text-align: center; width: 100%; color: #666;">
-            <span class="pageNumber"></span> / <span class="totalPages"></span>
-          </div>
-        `
-      });
+      try {
+        const page = await browser.newPage();
+        await page.setContent(await this.createHTML(options), {
+          waitUntil: 'networkidle0'
+        });
 
-      return Buffer.from(pdfBuffer);
-    } finally {
-      await browser.close();
+        const pdfBuffer = await page.pdf({
+          format: 'A4',
+          printBackground: true,
+          margin: {
+            top: '20mm',
+            right: '15mm',
+            bottom: '20mm',
+            left: '15mm'
+          },
+          displayHeaderFooter: true,
+          headerTemplate: '<div></div>',
+          footerTemplate: `
+            <div style="font-size: 10px; text-align: center; width: 100%; color: #666;">
+              <span class="pageNumber"></span> / <span class="totalPages"></span>
+            </div>
+          `
+        });
+
+        return Buffer.from(pdfBuffer);
+      } finally {
+        await browser.close();
+      }
+    } catch (error) {
+      console.error('Puppeteer PDF generation failed:', error);
+      // Fallback: Create a simple PDF-like text response
+      const fallbackContent = `
+PDF Generation Not Available
+============================
+
+This is a fallback response because PDF generation requires Chrome/Chromium
+to be installed on the system.
+
+Report Details:
+- User Role: ${options.userRole}
+- Report ID: ${options.report.id}
+- Generated: ${new Date().toISOString()}
+
+To enable PDF generation, please install Chrome/Chromium:
+npx puppeteer browsers install chrome
+
+Or install system chromium package if available.
+      `;
+
+      throw new Error(`PDF generation failed: ${error.message}. Chrome/Chromium is required for PDF generation.`);
     }
   }
 }

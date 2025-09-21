@@ -33,7 +33,7 @@ export interface IStorage {
   applyScenario(scenario: string): Promise<{ activeAlertId: string; scenarioName: string }>;
 
   // Reports
-  generateReport(sessionId: string): Promise<Report>;
+  generateReport(sessionId?: string): Promise<Report>;
 }
 
 export class FileStorage implements IStorage {
@@ -159,7 +159,7 @@ export class FileStorage implements IStorage {
     return sessions[index];
   }
 
-  async generateReport(sessionId: string): Promise<Report> {
+  async generateReport(sessionId?: string): Promise<Report> {
     const reports = await this.readJsonFile<Report>("reports.json");
     const report: Report = {
       id: randomUUID(),
@@ -352,12 +352,12 @@ export class DatabaseStorage implements IStorage {
     return session || undefined;
   }
 
-  async generateReport(sessionId: string): Promise<Report> {
-    const session = await this.getWorkflowSession(sessionId);
+  async generateReport(sessionId?: string): Promise<Report> {
+    const session = sessionId ? await this.getWorkflowSession(sessionId) : null;
     const alert = session ? await this.getAlert(session.alert_id) : null;
-    
+
     const reportData = {
-      session_id: sessionId,
+      session_id: sessionId || null,
       incident_summary: {
         title: alert?.title || "Security Incident",
         severity: alert?.severity || "Medium",

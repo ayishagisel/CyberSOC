@@ -4,7 +4,7 @@ hidden = [".config", ".git", "generated-icon.png", "node_modules", "dist"]
 
 [nix]
 channel = "stable-24_05"
-packages = ["glib", "glibc", "chromium"]
+packages = ["glib", "glibc", "chromium", "nspr", "nss", "mesa", "dbus", "xorg.libX11", "xorg.libXcomposite", "xorg.libXdamage", "xorg.libXext", "xorg.libXfixes", "xorg.libXi", "xorg.libXrandr", "gtk3", "alsa-lib", "atk", "cups"]
 
 [deployment]
 deploymentTarget = "autoscale"
@@ -26,6 +26,10 @@ externalPort = 3001
 [[ports]]
 localPort = 37533
 externalPort = 3000
+
+[[ports]]
+localPort = 38683
+externalPort = 5000
 
 [[ports]]
 localPort = 45597

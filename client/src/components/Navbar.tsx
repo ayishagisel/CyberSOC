@@ -1,7 +1,16 @@
 import { Button } from "@/components/ui/button";
-import { Shield, User } from "lucide-react";
+import { Shield, User, LogOut, ChevronDown } from "lucide-react";
 import { useState } from "react";
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger,
+  DropdownMenuSeparator 
+} from "@/components/ui/dropdown-menu";
 import NewSimulationDialog from "@/components/NewSimulationDialog";
+import { useAuth } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
 
 interface NavbarProps {
   userRole: "Analyst" | "Manager" | "Client";
@@ -10,6 +19,24 @@ interface NavbarProps {
 
 export default function Navbar({ userRole, onRoleChange }: NavbarProps) {
   const [showNewSimulationDialog, setShowNewSimulationDialog] = useState(false);
+  const { user, logout } = useAuth();
+  const { toast } = useToast();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      toast({
+        title: "Logged Out",
+        description: "You have been successfully logged out.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to logout. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <nav className="bg-card border-b border-border px-6 py-4">
@@ -51,9 +78,30 @@ export default function Navbar({ userRole, onRoleChange }: NavbarProps) {
             open={showNewSimulationDialog}
             onOpenChange={setShowNewSimulationDialog}
           />
-          <div className="w-8 h-8 bg-muted rounded-full flex items-center justify-center">
-            <User className="w-4 h-4" />
-          </div>
+          
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="flex items-center space-x-2" data-testid="user-menu">
+                <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+                  <User className="w-4 h-4 text-primary-foreground" />
+                </div>
+                <span className="text-sm font-medium">{user?.name}</span>
+                <ChevronDown className="w-4 h-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <div className="px-2 py-1.5">
+                <p className="text-sm font-medium">{user?.name}</p>
+                <p className="text-xs text-muted-foreground">{user?.email}</p>
+                <p className="text-xs text-muted-foreground">Role: {user?.role}</p>
+              </div>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleLogout} data-testid="logout-btn">
+                <LogOut className="mr-2 h-4 w-4" />
+                Logout
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </nav>

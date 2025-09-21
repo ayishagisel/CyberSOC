@@ -236,3 +236,18 @@ export type WorkflowSession = typeof workflow_sessions.$inferSelect;
 export type InsertWorkflowSession = typeof workflow_sessions.$inferInsert;
 export type Report = typeof reports.$inferSelect;
 export type InsertReport = typeof reports.$inferInsert;
+
+// User authentication types
+export interface User {
+  id: string;
+  email: string;
+  role: "Analyst" | "Manager" | "Client";
+  name: string;
+}
+
+// Mock user data for simulated SSO
+export const MOCK_USERS: User[] = [
+  { id: "user-analyst-1", email: "analyst@company.com", role: "Analyst", name: "Alex Chen" },
+  { id: "user-manager-1", email: "manager@company.com", role: "Manager", name: "Sarah Johnson" },
+  { id: "user-client-1", email: "client@company.com", role: "Client", name: "Michael Torres" }
+];

@@ -1,10 +1,107 @@
-import type { Express } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
+import jwt from "jsonwebtoken";
 import { storage } from "./storage";
+import { MOCK_USERS, type User } from "@shared/schema";
+
+// JWT secret for mock SSO
+const JWT_SECRET = process.env.JWT_SECRET || (() => {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('JWT_SECRET environment variable is required in production');
+  }
+  return "cybersec-training-secret-key-2025";
+})();
+
+// Extended request interface to include user
+interface AuthRequest extends Request {
+  user?: User;
+}
+
+// JWT Middleware
+const authenticateJWT = (req: AuthRequest, res: Response, next: NextFunction) => {
+  const token = req.cookies?.auth_token || req.headers.authorization?.replace('Bearer ', '');
+  
+  if (!token) {
+    return res.status(401).json({ error: "Authentication required" });
+  }
+  
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string; email: string; role: string };
+    const user = MOCK_USERS.find(u => u.id === decoded.userId);
+    
+    if (!user) {
+      return res.status(401).json({ error: "Invalid user" });
+    }
+    
+    req.user = user;
+    next();
+  } catch (error) {
+    return res.status(401).json({ error: "Invalid token" });
+  }
+};
+
+// Optional auth middleware (doesn't block if no token)
+const optionalAuth = (req: AuthRequest, res: Response, next: NextFunction) => {
+  const token = req.cookies?.auth_token || req.headers.authorization?.replace('Bearer ', '');
+  
+  if (token) {
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET) as { userId: string; email: string; role: string };
+      const user = MOCK_USERS.find(u => u.id === decoded.userId);
+      if (user) req.user = user;
+    } catch (error) {
+      // Ignore invalid tokens for optional auth
+    }
+  }
+  
+  next();
+};
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Alerts endpoints
-  app.get("/api/alerts", async (req, res) => {
+  // Auth routes
+  app.post("/api/auth/login", (req: AuthRequest, res: Response) => {
+    const { userType } = req.body;
+    
+    // Find user based on type selection
+    const user = MOCK_USERS.find(u => u.role === userType);
+    if (!user) {
+      return res.status(400).json({ error: "Invalid user type" });
+    }
+    
+    // Generate JWT token
+    const token = jwt.sign(
+      { userId: user.id, email: user.email, role: user.role },
+      JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+    
+    // Set secure cookie  
+    res.cookie('auth_token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/',
+      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    });
+    
+    res.json({ user }); // Don't expose token in response body
+  });
+  
+  app.get("/api/auth/me", authenticateJWT, (req: AuthRequest, res: Response) => {
+    res.json({ user: req.user });
+  });
+  
+  app.post("/api/auth/logout", (req: Request, res: Response) => {
+    res.clearCookie('auth_token', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/'
+    });
+    res.json({ message: "Logged out successfully" });
+  });
+  // Alerts endpoints (protected)
+  app.get("/api/alerts", authenticateJWT, async (req: AuthRequest, res) => {
     try {
       const alerts = await storage.getAlerts();
       res.json(alerts);
@@ -13,7 +110,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/alerts/:id", async (req, res) => {
+  app.get("/api/alerts/:id", authenticateJWT, async (req: AuthRequest, res) => {
     try {
       const alert = await storage.getAlert(req.params.id);
       if (!alert) {
@@ -25,7 +122,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/alerts/:id", async (req, res) => {
+  app.patch("/api/alerts/:id", authenticateJWT, async (req: AuthRequest, res) => {
     try {
       const alert = await storage.updateAlert(req.params.id, req.body);
       if (!alert) {
@@ -37,8 +134,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Endpoints
-  app.get("/api/endpoints", async (req, res) => {
+  // Endpoints (protected)
+  app.get("/api/endpoints", authenticateJWT, async (req: AuthRequest, res) => {
     try {
       const endpoints = await storage.getEndpoints();
       res.json(endpoints);
@@ -47,7 +144,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/endpoints/:id", async (req, res) => {
+  app.patch("/api/endpoints/:id", authenticateJWT, async (req: AuthRequest, res) => {
     try {
       const endpoint = await storage.updateEndpoint(req.params.id, req.body);
       if (!endpoint) {
@@ -59,8 +156,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Logs
-  app.get("/api/logs", async (req, res) => {
+  // Logs (protected)
+  app.get("/api/logs", authenticateJWT, async (req: AuthRequest, res) => {
     try {
       const { source, severity, limit } = req.query;
       const logs = await storage.getLogs({
@@ -75,7 +172,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Playbooks
-  app.get("/api/playbooks/:id", async (req, res) => {
+  app.get("/api/playbooks/:id", authenticateJWT, async (req: AuthRequest, res) => {
     try {
       const playbook = await storage.getPlaybook(req.params.id);
       if (!playbook) {
@@ -88,7 +185,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get playbook for specific alert type
-  app.get("/api/alerts/:alertId/playbook", async (req, res) => {
+  app.get("/api/alerts/:alertId/playbook", authenticateJWT, async (req: AuthRequest, res) => {
     try {
       const alert = await storage.getAlert(req.params.alertId);
       if (!alert) {
@@ -114,7 +211,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Workflow sessions
-  app.get("/api/workflow-sessions/:alertId", async (req, res) => {
+  app.get("/api/workflow-sessions/:alertId", authenticateJWT, async (req: AuthRequest, res) => {
     try {
       const { alertId } = req.params;
       const session = await storage.getWorkflowSessionByAlertId(alertId);
@@ -127,7 +224,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/workflow-sessions", async (req, res) => {
+  app.post("/api/workflow-sessions", authenticateJWT, async (req: AuthRequest, res) => {
     try {
       const session = await storage.createWorkflowSession(req.body);
       res.json(session);
@@ -136,7 +233,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/workflow-sessions/:id", async (req, res) => {
+  app.put("/api/workflow-sessions/:id", authenticateJWT, async (req: AuthRequest, res) => {
     try {
       const { id } = req.params;
       const session = await storage.updateWorkflowSession(id, req.body);
@@ -150,7 +247,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Reset simulation - clear all workflow sessions and apply selected scenario
-  app.post("/api/workflow-sessions/reset", async (req, res) => {
+  app.post("/api/workflow-sessions/reset", authenticateJWT, async (req: AuthRequest, res) => {
     try {
       const { scenario } = req.body;
       
@@ -179,7 +276,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Reports
-  app.post("/api/reports/generate", async (req, res) => {
+  app.post("/api/reports/generate", authenticateJWT, async (req: AuthRequest, res) => {
     try {
       const { sessionId, format, userRole = 'Analyst' } = req.body;
       const report = await storage.generateReport(sessionId);
@@ -202,7 +299,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Actions
-  app.post("/api/actions/isolate-endpoint", async (req, res) => {
+  app.post("/api/actions/isolate-endpoint", authenticateJWT, async (req: AuthRequest, res) => {
     try {
       const { endpointId } = req.body;
       const endpoint = await storage.updateEndpoint(endpointId, { status: "Isolated" });
@@ -212,7 +309,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/actions/isolate-all", async (req, res) => {
+  app.post("/api/actions/isolate-all", authenticateJWT, async (req: AuthRequest, res) => {
     try {
       const { endpointIds } = req.body;
       const promises = endpointIds.map((id: string) => 
@@ -225,7 +322,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/actions/lock-accounts", async (req, res) => {
+  app.post("/api/actions/lock-accounts", authenticateJWT, async (req: AuthRequest, res) => {
     try {
       // Simulate locking all user accounts to prevent lateral movement
       res.json({ 
@@ -238,7 +335,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/actions/reconnect-endpoint", async (req, res) => {
+  app.post("/api/actions/reconnect-endpoint", authenticateJWT, async (req: AuthRequest, res) => {
     try {
       const { endpointId } = req.body;
       const endpoint = await storage.updateEndpoint(endpointId, { status: "Normal" });
@@ -248,7 +345,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/actions/analyze-traffic", async (req, res) => {
+  app.post("/api/actions/analyze-traffic", authenticateJWT, async (req: AuthRequest, res) => {
     try {
       const { alertId } = req.body;
       // Simulate network traffic analysis
@@ -270,7 +367,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/workflow/advance", async (req, res) => {
+  app.post("/api/workflow/advance", authenticateJWT, async (req: AuthRequest, res) => {
     try {
       const { alertId, phase } = req.body;
       

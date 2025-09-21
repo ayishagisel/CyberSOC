@@ -299,7 +299,7 @@ export class PDFGenerator {
   static async generatePDF(options: PDFGenerationOptions): Promise<Buffer> {
     try {
       const browser = await puppeteer.launch({
-        headless: 'new',
+        headless: true,
         args: [
           '--no-sandbox',
           '--disable-setuid-sandbox',
@@ -366,7 +366,7 @@ npx puppeteer browsers install chrome
 Or install system chromium package if available.
       `;
 
-      throw new Error(`PDF generation failed: ${error.message}. Chrome/Chromium is required for PDF generation.`);
+      throw new Error(`PDF generation failed: ${error instanceof Error ? error.message : String(error)}. Chrome/Chromium is required for PDF generation.`);
     }
   }
 }

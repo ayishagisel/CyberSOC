@@ -57,7 +57,7 @@ export default function AlertCard({
     }
   };
 
-  const formatTimestamp = (timestamp: string) => {
+  const formatTimestamp = (timestamp: string | Date) => {
     return new Date(timestamp).toLocaleString();
   };
 

@@ -43,7 +43,7 @@ export default function LogViewer({ logs: initialLogs }: LogViewerProps) {
     }
   };
 
-  const formatTimestamp = (timestamp: string) => {
+  const formatTimestamp = (timestamp: string | Date) => {
     return new Date(timestamp).toLocaleString();
   };
 

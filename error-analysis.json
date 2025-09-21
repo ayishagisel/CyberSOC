@@ -1,0 +1,74 @@
+{
+  "errorAnalysis": {
+    "totalErrors": 4,
+    "lastAnalyzed": "2025-09-20",
+    "currentRun": "2025-09-20-run2",
+    "errorGroups": {
+      "dateStringTypeMismatches": {
+        "count": 0,
+        "severity": "resolved",
+        "description": "Date objects being passed where string parameters are expected - RESOLVED",
+        "errors": []
+      },
+      "typeConversionIssues": {
+        "count": 1,
+        "severity": "high",
+        "description": "Invalid type conversions, likely from API response handling",
+        "errors": [
+          {
+            "file": "client/src/hooks/use-workflow.tsx",
+            "line": 73,
+            "column": 21,
+            "message": "Conversion of type 'Response & Record<\"id\", unknown>' to type workflow session object may be a mistake",
+            "category": "type_conversion",
+            "missingProperties": ["alert_id", "current_node", "started_at", "completed_nodes"]
+          }
+        ]
+      },
+      "indexSignatureIssues": {
+        "count": 2,
+        "severity": "medium",
+        "description": "Attempting to use string indexing on objects without proper index signatures",
+        "errors": [
+          {
+            "file": "client/src/pages/dashboard.tsx",
+            "line": 96,
+            "column": 104,
+            "message": "Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{}'",
+            "category": "index_signature",
+            "status": "active"
+          },
+          {
+            "file": "client/src/pages/dashboard.tsx",
+            "line": 98,
+            "column": 27,
+            "message": "Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{}'",
+            "category": "index_signature",
+            "status": "active"
+          }
+        ]
+      },
+      "drizzleOrmTypeIssues": {
+        "count": 1,
+        "severity": "high",
+        "description": "Drizzle ORM query type issues with missing properties",
+        "errors": [
+          {
+            "file": "server/storage.ts",
+            "line": 311,
+            "column": 7,
+            "message": "Type 'Omit<PgSelectBase...>' is missing properties from type 'PgSelectBase...'",
+            "category": "orm_query_type",
+            "missingProperties": ["config", "joinsNotNullableMap", "tableName", "isPartialSelect"]
+          }
+        ]
+      }
+    },
+    "recommendedFixes": {
+      "dateStringMismatches": "Convert Date objects to strings using .toISOString() or format appropriately",
+      "typeConversionIssues": "Add proper type guards and response validation",
+      "indexSignatureIssues": "Add proper type definitions with index signatures or use type assertions",
+      "drizzleOrmTypeIssues": "Review Drizzle query syntax and ensure proper type inference"
+    }
+  }
+}

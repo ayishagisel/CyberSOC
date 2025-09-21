@@ -69,7 +69,7 @@ export function useWorkflow(alertId: string | null) {
       }
     },
     onSuccess: (session) => {
-      if (session && typeof session === 'object' && 'id' in session) {
+      if (session && typeof session === 'object' && 'id' in session && 'alert_id' in session && 'current_node' in session) {
         setWorkflow(session as WorkflowSession);
         queryClient.invalidateQueries({ queryKey: ["/api/workflow-sessions", alertId] });
       }
@@ -90,10 +90,10 @@ export function useWorkflow(alertId: string | null) {
     }
   }, [playbookData, existingSession, currentNodeId]);
 
-  const currentNode = playbookData?.nodes?.[currentNodeId] as PlaybookNode | undefined;
+  const currentNode = (playbookData?.nodes as Record<string, PlaybookNode> | undefined)?.[currentNodeId];
 
   const advanceWorkflow = (nextNodeId?: string, actionTaken?: string) => {
-    if (nextNodeId && playbookData?.nodes?.[nextNodeId] && currentNodeId) {
+    if (nextNodeId && (playbookData?.nodes as Record<string, PlaybookNode> | undefined)?.[nextNodeId] && currentNodeId) {
       // Only add current node to completed if it's not already there and not empty
       const newCompletedNodes = completedNodes.includes(currentNodeId) 
         ? completedNodes 
@@ -116,7 +116,7 @@ export function useWorkflow(alertId: string | null) {
     console.log("Executing action:", action);
     
     // Find the next node based on the action
-    const currentNodeData = playbookData?.nodes?.[currentNodeId] as PlaybookNode | undefined;
+    const currentNodeData = (playbookData?.nodes as Record<string, PlaybookNode> | undefined)?.[currentNodeId];
     const option = currentNodeData?.options?.find((opt: any) => opt.action === action);
     if (option?.next_node) {
       advanceWorkflow(option.next_node, action);

@@ -138,130 +138,11 @@ const mockIncidentData = {
   }
 }
 
-// MSW server setup for integration tests
-const server = setupServer(
-  // Alerts API
-  http.get('/api/alerts', () => {
-    return HttpResponse.json(mockIncidentData.alerts)
-  }),
-
-  http.get('/api/alerts/:id', ({ params }) => {
-    const alert = mockIncidentData.alerts.find(a => a.id === params.id)
-    return alert ? HttpResponse.json(alert) : new HttpResponse(null, { status: 404 })
-  }),
-
-  // Endpoints API
-  http.get('/api/endpoints', () => {
-    return HttpResponse.json(mockIncidentData.endpoints)
-  }),
-
-  // Logs API
-  http.get('/api/logs', ({ request }) => {
-    const url = new URL(request.url)
-    const severity = url.searchParams.get('severity')
-    const source = url.searchParams.get('source')
-
-    let filteredLogs = mockIncidentData.logs
-    if (severity && severity !== 'All Severities') {
-      filteredLogs = filteredLogs.filter(log => log.severity === severity)
-    }
-    if (source && source !== 'All Sources') {
-      filteredLogs = filteredLogs.filter(log => log.source === source)
-    }
-
-    return HttpResponse.json(filteredLogs)
-  }),
-
-  // Workflow Sessions API
-  http.get('/api/workflow-sessions', () => {
-    return HttpResponse.json(mockIncidentData.workflowSessions)
-  }),
-
-  http.post('/api/workflow-sessions', async ({ request }) => {
-    const body = await request.json() as any
-    const newSession = {
-      id: `session-${Date.now()}`,
-      ...body,
-      started_at: body.started_at || new Date().toISOString(),
-      completed_nodes: body.completed_nodes || [],
-      actions_taken: body.actions_taken || [],
-      status: body.status || 'Active'
-    }
-    return HttpResponse.json(newSession, { status: 201 })
-  }),
-
-  http.put('/api/workflow-sessions/:id', async ({ params, request }) => {
-    const body = await request.json() as any
-    const updatedSession = {
-      ...mockIncidentData.workflowSessions[0],
-      id: params.id as string,
-      ...body
-    }
-    return HttpResponse.json(updatedSession)
-  }),
-
-  // Playbooks API
-  http.get('/api/playbooks/:type', ({ params }) => {
-    const playbook = mockIncidentData.playbooks[params.type as keyof typeof mockIncidentData.playbooks]
-    return playbook ? HttpResponse.json(playbook) : new HttpResponse(null, { status: 404 })
-  }),
-
-  // Actions API
-  http.post('/api/actions/isolate-endpoint', async ({ request }) => {
-    const body = await request.json() as { endpointId: string }
-    return HttpResponse.json({
-      success: true,
-      message: `Endpoint ${body.endpointId} isolated successfully`,
-      timestamp: new Date().toISOString()
-    })
-  }),
-
-  http.post('/api/actions/disable-account', async ({ request }) => {
-    const body = await request.json() as { userId: string }
-    return HttpResponse.json({
-      success: true,
-      message: `User account ${body.userId} disabled successfully`,
-      timestamp: new Date().toISOString()
-    })
-  }),
-
-  // Reports API
-  http.post('/api/reports/generate', async ({ request }) => {
-    const body = await request.json() as { sessionId: string, format: string }
-    return HttpResponse.json({
-      success: true,
-      reportId: `report-${Date.now()}`,
-      format: body.format,
-      downloadUrl: `/api/reports/download/report-${Date.now()}.${body.format}`,
-      generatedAt: new Date().toISOString()
-    })
-  }),
-
-  // Authentication
-  http.post('/api/auth/login', async ({ request }) => {
-    const body = await request.json() as { role: string }
-    return HttpResponse.json({
-      success: true,
-      user: {
-        id: `user-${Date.now()}`,
-        role: body.role,
-        username: `${body.role.toLowerCase()}_user`
-      },
-      token: 'mock-jwt-token'
-    })
-  })
-)
+// Import the global server from setup for MSW
+import { server } from '../mocks/server'
 
 describe('Incident Response Workflow Integration Tests', () => {
   let queryClient: QueryClient
-
-  beforeAll(() => {
-    server.listen({ onUnhandledRequest: 'error' })
-  })
-
-  afterAll(() => {
-    server.close()
-  })
 
   beforeEach(() => {
     queryClient = new QueryClient({
@@ -271,7 +152,33 @@ describe('Incident Response Workflow Integration Tests', () => {
         },
       },
     })
-    server.resetHandlers()
+    // Use test-specific handlers if needed
+    server.use(
+      http.get('/api/alerts', () => {
+        return HttpResponse.json(mockIncidentData.alerts)
+      }),
+      http.get('/api/endpoints', () => {
+        return HttpResponse.json(mockIncidentData.endpoints)
+      }),
+      http.get('/api/logs', ({ request }) => {
+        const url = new URL(request.url)
+        const severity = url.searchParams.get('severity')
+        const source = url.searchParams.get('source')
+
+        let filteredLogs = mockIncidentData.logs
+        if (severity && severity !== 'All Severities') {
+          filteredLogs = filteredLogs.filter(log => log.severity === severity)
+        }
+        if (source && source !== 'All Sources') {
+          filteredLogs = filteredLogs.filter(log => log.source === source)
+        }
+
+        return HttpResponse.json(filteredLogs)
+      }),
+      http.get('/api/workflow-sessions', () => {
+        return HttpResponse.json(mockIncidentData.workflowSessions)
+      })
+    )
   })
 
   afterEach(() => {

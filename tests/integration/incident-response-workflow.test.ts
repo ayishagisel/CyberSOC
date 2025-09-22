@@ -87,11 +87,10 @@ const mockIncidentData = {
       alert_id: 'alert-ransomware-001',
       user_role: 'Analyst',
       current_node: 'detection_phase',
+      started_at: '2025-01-17T13:05:00Z',
       completed_nodes: [],
       actions_taken: [],
-      status: 'Active',
-      created_at: new Date(),
-      updated_at: new Date()
+      status: 'Active'
     }
   ],
   playbooks: {
@@ -183,8 +182,10 @@ const server = setupServer(
     const newSession = {
       id: `session-${Date.now()}`,
       ...body,
-      created_at: new Date(),
-      updated_at: new Date()
+      started_at: body.started_at || new Date().toISOString(),
+      completed_nodes: body.completed_nodes || [],
+      actions_taken: body.actions_taken || [],
+      status: body.status || 'Active'
     }
     return HttpResponse.json(newSession, { status: 201 })
   }),
@@ -193,9 +194,8 @@ const server = setupServer(
     const body = await request.json() as any
     const updatedSession = {
       ...mockIncidentData.workflowSessions[0],
-      id: params.id,
-      ...body,
-      updated_at: new Date()
+      id: params.id as string,
+      ...body
     }
     return HttpResponse.json(updatedSession)
   }),

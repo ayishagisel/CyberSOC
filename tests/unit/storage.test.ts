@@ -76,10 +76,11 @@ describe('FileStorage', () => {
         id: 'session-001',
         alert_id: 'alert-001',
         user_role: 'Analyst',
-        current_step: 1,
-        workflow_state: { completed_steps: [] },
-        created_at: new Date('2025-01-17T10:05:00Z'),
-        updated_at: new Date('2025-01-17T10:05:00Z')
+        current_node: 'detection_phase',
+        started_at: '2025-01-17T10:05:00Z',
+        completed_nodes: [],
+        actions_taken: [],
+        status: 'Active'
       }
     ];
 
@@ -219,10 +220,11 @@ describe('FileStorage', () => {
       const sessionData = {
         alert_id: 'alert-001',
         user_role: 'Analyst' as const,
-        current_step: 1,
-        workflow_state: { completed_steps: [] },
-        created_at: new Date(),
-        updated_at: new Date()
+        current_node: 'detection_phase',
+        started_at: '2025-01-17T10:05:00Z',
+        completed_nodes: [],
+        actions_taken: [],
+        status: 'Active' as const
       };
 
       const result = await storage.createWorkflowSession(sessionData);

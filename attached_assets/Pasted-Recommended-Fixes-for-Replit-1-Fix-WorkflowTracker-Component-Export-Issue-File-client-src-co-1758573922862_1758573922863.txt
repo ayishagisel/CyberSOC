@@ -1,0 +1,59 @@
+Recommended Fixes for Replit
+
+  1. Fix WorkflowTracker Component Export Issue
+
+  File: client/src/components/WorkflowTracker.tsx
+  Problem: Component export/import causing "Element type is invalid" errors
+  Fix: Ensure the component is properly exported as default export:
+  // At the end of WorkflowTracker.tsx, ensure:
+  export default WorkflowTracker
+
+  2. Fix Dashboard Data Loading Issues
+
+  File: client/src/pages/Dashboard.tsx
+  Problem: Dashboard state showing activeAlert: undefined, criticalAlerts: []
+  Fix: Ensure the Dashboard component properly handles API data loading and sets initial state correctly when alerts are fetched.
+
+  3. Fix MSW Handler Endpoints
+
+  File: tests/mocks/handlers.ts
+  Problem: Mock Service Worker handlers not matching actual API endpoints
+  Fix: Ensure MSW handlers match the exact API endpoints used by the application:
+  - /api/alerts should return mock alert data
+  - /api/endpoints should return mock endpoint data
+  - /api/logs should return mock log data
+  - Handlers should provide complete data objects with all required fields
+
+  4. Fix Component Import Paths
+
+  Problem: Tests cannot find components they're trying to import
+  Fix: Verify and correct import paths in test files, particularly:
+  - WorkflowTracker component import in tests/unit/WorkflowTracker.test.tsx
+  - Dashboard component imports
+  - Ensure all component files exist at expected paths
+
+  5. Fix Schema Validation Data
+
+  Problem: Zod validation failures for WorkflowSession objects
+  Fix: Ensure all WorkflowSession objects in application code include required fields:
+  - started_at (string)
+  - completed_nodes (array)
+  - actions_taken (array)
+  - status (enum: 'Active' | 'Completed' | 'Paused')
+  - user_role (enum: 'Analyst' | 'Manager' | 'Client')
+
+  Key Principle
+
+  DO NOT modify the test files - fix the application code that the tests are validating. The tests are correctly identifying real issues in the
+  application.
+
+  Priority Order
+
+  1. WorkflowTracker export (blocking multiple tests)
+  2. Dashboard data loading (core functionality)
+  3. MSW handlers (test infrastructure)
+  4. Schema validation (data integrity)
+  5. Import paths (test execution)
+
+  These fixes should address the root causes of the 75 failing tests by fixing the actual application code issues rather than masking them in
+  the tests.

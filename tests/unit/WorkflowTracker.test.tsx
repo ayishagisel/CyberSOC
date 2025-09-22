@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { WorkflowTracker } from '@/components/WorkflowTracker';
+import WorkflowTracker from '@/components/WorkflowTracker';
 import { useWorkflow } from '@/hooks/use-workflow';
 
 vi.mock('@/hooks/use-workflow');

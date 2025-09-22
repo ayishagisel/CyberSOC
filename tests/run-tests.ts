@@ -2,8 +2,8 @@
 // Test Runner
 // Executes all type safety and integration tests
 
-import { typeSafetyTests } from './type-safety.test.js';
-import { workflowIntegrationTests } from './workflow-integration.test.js';
+import { typeSafetyTests } from './type-safety.test.ts';
+import { workflowIntegrationTests } from './workflow-integration.test.ts';
 
 console.log('='.repeat(60));
 console.log('  CYBERSECURITY TRAINING APP - TEST SUITE');

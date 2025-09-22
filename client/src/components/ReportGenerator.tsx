@@ -67,10 +67,33 @@ export default function ReportGenerator({
         description: `Professional ${userRole.toLowerCase()} report exported as ${format.toUpperCase()}.`,
       });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error('Report generation failed:', error);
+      
+      // Extract error details from response if available
+      let errorMessage = "Failed to generate report.";
+      let errorDetails = "";
+      
+      if (error instanceof Error) {
+        errorMessage = error.message;
+        
+        // Check if it's a network error with JSON response
+        if (error.message.includes("500:")) {
+          try {
+            const responseText = error.message.split("500: ")[1];
+            const errorData = JSON.parse(responseText);
+            if (errorData.details) {
+              errorDetails = ` Details: ${errorData.details}`;
+            }
+          } catch (e) {
+            // Ignore parsing errors
+          }
+        }
+      }
+      
       toast({
         title: "Error",
-        description: "Failed to generate report.",
+        description: `${errorMessage}${errorDetails}`,
         variant: "destructive",
       });
     },

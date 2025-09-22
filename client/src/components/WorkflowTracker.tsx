@@ -1,10 +1,10 @@
 import { Check, Circle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useWorkflow } from "@/hooks/use-workflow";
 
 interface WorkflowTrackerProps {
-  currentPhase: string;
-  completedPhases: string[];
-  mitreAttackTechniques: string[];
+  alertId: string;
+  userRole: string;
   onPhaseClick?: (phaseId: string) => void;
 }
 
@@ -22,14 +22,16 @@ const MITRE_TECHNIQUES = [
 ];
 
 export default function WorkflowTracker({ 
-  currentPhase, 
-  completedPhases,
-  mitreAttackTechniques,
+  alertId,
+  userRole,
   onPhaseClick
 }: WorkflowTrackerProps) {
+  const { currentStep, totalSteps, stepHistory, isLoading } = useWorkflow(alertId);
+  
   const getPhaseStatus = (phase: string) => {
-    if (completedPhases.includes(phase)) return "completed";
-    if (phase === currentPhase) return "active";
+    const completedSteps = stepHistory?.filter(s => s.completed).map(s => s.title) || [];
+    if (completedSteps.includes(phase)) return "completed";
+    if (stepHistory && stepHistory[currentStep - 1]?.title === phase) return "active";
     return "pending";
   };
 
@@ -44,12 +46,48 @@ export default function WorkflowTracker({
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="w-80 bg-card border-r border-border p-6 overflow-y-auto">
+        <h2 className="text-lg font-semibold mb-4">Incident Response Progress</h2>
+        <div className="text-center text-muted-foreground">Loading workflow...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="w-80 bg-card border-r border-border p-6 overflow-y-auto">
-      <h2 className="text-lg font-semibold mb-4">Incident Response Workflow</h2>
+      <h2 className="text-lg font-semibold mb-4">Incident Response Progress</h2>
+      {totalSteps > 0 && (
+        <div className="mb-4 text-sm text-muted-foreground">
+          Step {currentStep} of {totalSteps}
+        </div>
+      )}
       
       <div className="space-y-3">
-        {WORKFLOW_PHASES.map((phase) => {
+        {stepHistory?.map((step, index) => {
+          const status = step.completed ? "completed" : (index === currentStep - 1 ? "active" : "pending");
+          return (
+            <div
+              key={step.step}
+              onClick={() => onPhaseClick?.(step.title)}
+              className={`workflow-step ${status} p-3 rounded-lg border-l-4 cursor-pointer hover:bg-muted/50 transition-colors ${
+                status === "active" ? "border-primary" : "border-muted"
+              }`}
+              data-testid={`workflow-phase-${step.title.toLowerCase()}`}
+            >
+              <div className="flex items-center justify-between">
+                <span className="font-medium">{step.title}</span>
+                {getStatusIcon(status)}
+              </div>
+              {step.timestamp && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Completed: {new Date(step.timestamp).toLocaleTimeString()}
+                </p>
+              )}
+            </div>
+          );
+        }) || WORKFLOW_PHASES.map((phase) => {
           const status = getPhaseStatus(phase.id);
           return (
             <div

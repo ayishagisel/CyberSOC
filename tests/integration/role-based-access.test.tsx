@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { MemoryRouter } from 'wouter';
+import { Router } from 'wouter';
 import App from '@/App';
 
 // Mock API responses
@@ -56,9 +56,9 @@ const renderWithProviders = (component: React.ReactElement, initialPath = '/') =
 
   return render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter initialEntries={[initialPath]}>
+      <Router>
         {component}
-      </MemoryRouter>
+      </Router>
     </QueryClientProvider>
   );
 };

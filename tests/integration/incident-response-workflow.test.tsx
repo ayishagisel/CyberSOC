@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { setupServer } from 'msw/node'
 import { http, HttpResponse } from 'msw'
 import Dashboard from '@/pages/dashboard'
-import LoginPage from '@/pages/login'
+import Login from '@/pages/login'
 
 // Mock data for integration testing
 const mockIncidentData = {
@@ -207,7 +207,7 @@ describe('Incident Response Workflow Integration Tests', () => {
       vi.doMock('@/hooks/use-workflow', () => ({ useWorkflow: () => mockWorkflow }))
 
       // Step 1: Login as Analyst
-      const { unmount: unmountLogin } = render(<LoginPage />)
+      const { unmount: unmountLogin } = render(<Login />)
 
       await user.click(screen.getByTestId('role-analyst'))
       await user.click(screen.getByTestId('login-button'))

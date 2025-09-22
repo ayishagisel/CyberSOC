@@ -1,6 +1,7 @@
 // Type Safety Tests
 // These tests help catch type mismatches before they become runtime errors
 
+import { describe, it, expect } from 'vitest';
 import { z } from 'zod';
 
 // Import shared schemas for validation
@@ -20,17 +21,33 @@ const workflowSessionSchema = z.object({
   user_role: z.enum(["Analyst", "Manager", "Client"]),
 });
 
-// Test 1: WorkflowSession Type Validation
-// This prevents the error in client/src/hooks/use-workflow.tsx:73
-export function validateWorkflowSessionResponse(response: unknown): boolean {
-  try {
-    workflowSessionSchema.parse(response);
-    return true;
-  } catch (error) {
-    console.error('WorkflowSession validation failed:', error);
-    return false;
-  }
-}
+describe('Type Safety Tests', () => {
+  it('should validate WorkflowSession response correctly', () => {
+    const validResponse = {
+      id: 'session-001',
+      alert_id: 'alert-001',
+      current_node: 'detection',
+      started_at: '2025-01-17T10:00:00Z',
+      completed_nodes: ['detection'],
+      actions_taken: [],
+      status: 'Active',
+      user_role: 'Analyst'
+    };
+    
+    const result = workflowSessionSchema.safeParse(validResponse);
+    expect(result.success).toBe(true);
+  });
+
+  it('should reject invalid WorkflowSession response', () => {
+    const invalidResponse = {
+      id: 'session-001',
+      // missing required fields
+    };
+    
+    const result = workflowSessionSchema.safeParse(invalidResponse);
+    expect(result.success).toBe(false);
+  });
+});
 
 // Test 2: Object Index Signature Validation
 // This prevents errors in client/src/pages/dashboard.tsx:96,98

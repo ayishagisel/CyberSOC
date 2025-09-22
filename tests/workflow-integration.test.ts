@@ -1,6 +1,7 @@
 // Workflow Integration Tests
 // These tests ensure the workflow system components work together correctly
 
+import { describe, it, expect } from 'vitest';
 import { z } from 'zod';
 
 // Mock types based on the actual schemas
@@ -29,9 +30,8 @@ interface WorkflowSession {
   user_role: "Analyst" | "Manager" | "Client";
 }
 
-// Test 1: Workflow Phase Mapping
-// Prevents errors in dashboard.tsx with phase to node mapping
-export function testPhaseToNodeMapping(): boolean {
+describe('Workflow Integration Tests', () => {
+  it('should map workflow phases to nodes correctly', () => {
   const phaseToNodeMap: Record<string, string> = {
     "Initial Response": "initial_response",
     "Investigation": "investigation_phase",

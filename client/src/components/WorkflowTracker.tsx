@@ -102,8 +102,15 @@ export default function WorkflowTracker({
         </div>
       )}
       
+      {/* Error States */}
+      {!alertId && (
+        <div className="text-center text-muted-foreground mb-4">
+          No active workflow
+        </div>
+      )}
+
       <div className="space-y-3">
-        {stepHistory?.map((step, index) => {
+        {stepHistory && stepHistory.length > 0 ? stepHistory.map((step, index) => {
           const status = step.completed ? "completed" : (index === currentStep - 1 ? "active" : "pending");
           const isFutureStep = index >= currentStep;
           
@@ -131,12 +138,15 @@ export default function WorkflowTracker({
               )}
             </div>
           );
-        }) || WORKFLOW_PHASES.map((phase) => {
+        }) : WORKFLOW_PHASES.map((phase) => {
           const status = getPhaseStatus(phase.id);
           return (
             <div
               key={phase.id}
               onClick={() => onPhaseClick?.(phase.id)}
+              tabIndex={0}
+              role="button"
+              aria-current={status === "active" ? "step" : undefined}
               className={`workflow-step ${status} p-3 rounded-lg border-l-4 cursor-pointer hover:bg-muted/50 transition-colors ${
                 status === "active" ? "border-primary" : "border-muted"
               }`}

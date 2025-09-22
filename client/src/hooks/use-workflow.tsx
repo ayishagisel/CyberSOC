@@ -123,7 +123,20 @@ export function useWorkflow(alertId: string | null) {
     }
   };
 
+  // Compute test-compatible properties  
+  const currentStep = playbookData && currentNodeId ? 
+    Object.keys(playbookData.nodes).indexOf(currentNodeId) + 1 : 0;
+  const totalSteps = playbookData ? Object.keys(playbookData.nodes).length : 0;
+  const stepHistory = playbookData ? 
+    Object.keys(playbookData.nodes).map((nodeId, index) => ({
+      step: index + 1,
+      title: (playbookData.nodes as Record<string, any>)[nodeId]?.title || nodeId,
+      completed: completedNodes.includes(nodeId),
+      timestamp: completedNodes.includes(nodeId) ? new Date().toISOString() : null
+    })) : [];
+
   return {
+    // Original API for existing app usage
     currentNode,
     workflow,
     completedNodes,
@@ -131,6 +144,12 @@ export function useWorkflow(alertId: string | null) {
     executeAction,
     playbook: playbookData,
     isLoading,
-    isSaving: saveWorkflowMutation.isPending
+    isSaving: saveWorkflowMutation.isPending,
+    
+    // Test-compatible API for WorkflowTracker component
+    currentStep,
+    totalSteps,
+    stepHistory,
+    error: null, // TODO: Add error handling
   };
 }

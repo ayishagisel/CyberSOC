@@ -55,25 +55,69 @@ export default function WorkflowTracker({
     );
   }
 
+  // Role-based content
+  const getRoleBasedContent = () => {
+    switch (userRole) {
+      case 'Analyst':
+        return 'Technical analysis and detailed investigation required for each step.';
+      case 'Manager':
+        return 'High-level status overview and resource allocation monitoring.';
+      case 'Client':
+        return 'Incident status updates and business impact visibility.';
+      default:
+        return '';
+    }
+  };
+
   return (
     <div className="w-80 bg-card border-r border-border p-6 overflow-y-auto">
       <h2 className="text-lg font-semibold mb-4">Incident Response Progress</h2>
+      
+      {/* Progress Bar */}
       {totalSteps > 0 && (
-        <div className="mb-4 text-sm text-muted-foreground">
-          Step {currentStep} of {totalSteps}
+        <div className="mb-4">
+          <div 
+            role="progressbar" 
+            aria-label="Workflow Progress"
+            aria-valuenow={Math.round((currentStep / totalSteps) * 100)}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            className="w-full bg-muted rounded-full h-2 mb-2"
+          >
+            <div 
+              className="bg-primary h-2 rounded-full transition-all duration-300"
+              style={{ width: `${(currentStep / totalSteps) * 100}%` }}
+            />
+          </div>
+          <div className="text-sm text-muted-foreground" aria-label="Current step">
+            Step {currentStep} of {totalSteps}
+          </div>
+        </div>
+      )}
+
+      {/* Role-based content */}
+      {getRoleBasedContent() && (
+        <div className="mb-4 text-xs text-muted-foreground p-2 bg-muted/50 rounded">
+          {getRoleBasedContent()}
         </div>
       )}
       
       <div className="space-y-3">
         {stepHistory?.map((step, index) => {
           const status = step.completed ? "completed" : (index === currentStep - 1 ? "active" : "pending");
+          const isFutureStep = index >= currentStep;
+          
           return (
             <div
               key={step.step}
-              onClick={() => onPhaseClick?.(step.title)}
-              className={`workflow-step ${status} p-3 rounded-lg border-l-4 cursor-pointer hover:bg-muted/50 transition-colors ${
+              onClick={() => !isFutureStep && onPhaseClick?.(step.title)}
+              tabIndex={status === "active" || status === "completed" ? 0 : -1}
+              role="button"
+              aria-current={status === "active" ? "step" : undefined}
+              aria-describedby={`step-${step.step}-desc`}
+              className={`workflow-step ${status} p-3 rounded-lg border-l-4 transition-colors ${
                 status === "active" ? "border-primary" : "border-muted"
-              }`}
+              } ${isFutureStep ? "cursor-not-allowed opacity-60" : "cursor-pointer hover:bg-muted/50"}`}
               data-testid={`workflow-phase-${step.title.toLowerCase()}`}
             >
               <div className="flex items-center justify-between">

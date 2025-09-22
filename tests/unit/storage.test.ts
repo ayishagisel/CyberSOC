@@ -140,10 +140,21 @@ describe('FileStorage', () => {
       const result = await storage.updateAlert('alert-001', updates);
 
       expect(result).toEqual({ ...mockAlertsData[0], ...updates });
-      expect(mockFs.writeFile).toHaveBeenCalledWith(
-        expect.stringContaining('alerts.json'),
-        expect.stringContaining('"status":"In Progress"')
-      );
+      
+      // Verify file write with flexible assertions
+      expect(mockFs.writeFile).toHaveBeenCalledTimes(1);
+      const [filePath, fileContent] = mockFs.writeFile.mock.calls[0];
+      
+      // Assert file path contains alerts.json (avoid absolute vs relative path issues)
+      expect(filePath).toMatch(/alerts\.json$/);
+      
+      // Parse JSON content and assert on object structure (avoid formatting differences)
+      const writtenData = JSON.parse(fileContent as string);
+      expect(Array.isArray(writtenData)).toBe(true);
+      expect(writtenData[0]).toMatchObject({
+        id: 'alert-001',
+        status: 'In Progress'
+      });
     });
 
     it('should return undefined for non-existent alert', async () => {

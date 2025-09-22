@@ -64,7 +64,7 @@ export function useWorkflow(alertId: string | null) {
         // Create new session
         return await apiRequest("POST", "/api/workflow-sessions", {
           ...sessionData,
-          started_at: new Date()
+          started_at: new Date().toISOString()
         });
       }
     },

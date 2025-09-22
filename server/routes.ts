@@ -2,7 +2,8 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import jwt from "jsonwebtoken";
 import { storage } from "./storage";
-import { MOCK_USERS, type User } from "@shared/schema";
+import { MOCK_USERS, type User, insertWorkflowSessionSchema } from "@shared/schema";
+import { z } from "zod";
 
 // JWT secret for mock SSO
 const JWT_SECRET = process.env.JWT_SECRET || (() => {
@@ -226,10 +227,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/workflow-sessions", authenticateJWT, async (req: AuthRequest, res) => {
     try {
-      const session = await storage.createWorkflowSession(req.body);
+      // Validate request body against schema
+      const validatedData = insertWorkflowSessionSchema.omit({ id: true }).parse(req.body);
+      const session = await storage.createWorkflowSession(validatedData);
       res.json(session);
     } catch (error) {
-      res.status(500).json({ error: "Failed to create workflow session" });
+      console.error("Failed to create workflow session:", error);
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: "Invalid data", details: error.errors });
+      } else {
+        res.status(500).json({ error: "Failed to create workflow session" });
+      }
     }
   });
 

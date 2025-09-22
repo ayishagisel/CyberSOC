@@ -353,8 +353,25 @@ export class DatabaseStorage implements IStorage {
   }
 
   async generateReport(sessionId?: string): Promise<Report> {
-    const session = sessionId ? await this.getWorkflowSession(sessionId) : null;
-    const alert = session ? await this.getAlert(session.alert_id) : null;
+    let session = null;
+    let alert = null;
+    
+    if (sessionId === "current") {
+      // Get the most recent active session or find an active alert to create context
+      const activeSessions = await db.select().from(workflow_sessions).orderBy(desc(workflow_sessions.id)).limit(1);
+      session = activeSessions[0] || null;
+      
+      // If no session exists, try to get the most recent alert to create context
+      if (!session) {
+        const recentAlerts = await db.select().from(alerts).orderBy(desc(alerts.id)).limit(1);
+        alert = recentAlerts[0] || null;
+      } else {
+        alert = await this.getAlert(session.alert_id);
+      }
+    } else if (sessionId) {
+      session = await this.getWorkflowSession(sessionId);
+      alert = session ? await this.getAlert(session.alert_id) : null;
+    }
 
     const reportData = {
       session_id: sessionId || null,

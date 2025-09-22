@@ -150,6 +150,8 @@ The application includes realistic cybersecurity scenarios:
 - **Network Analysis**: Command & control communication detection
 - **MITRE ATT&CK**: Technique mapping (T1486, T1059.001, etc.)
 
+For detailed test coverage and reports, see `tests/README.md`.
+
 ## 🔧 Configuration
 
 ### Environment Variables

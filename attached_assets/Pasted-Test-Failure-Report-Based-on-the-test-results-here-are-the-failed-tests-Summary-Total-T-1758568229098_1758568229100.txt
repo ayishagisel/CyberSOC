@@ -1,0 +1,61 @@
+Test Failure Report
+
+  Based on the test results, here are the failed tests:
+
+  Summary
+
+  - Total Tests: 147 tests
+  - Failed: 75 tests
+  - Passed: 72 tests
+  - Files: 10 failed test files, 2 passed
+
+  Major Failing Categories
+
+  1. WorkflowTracker Component Tests
+
+  Issue: Import/Export errors - component not properly exported
+  - Error: Element type is invalid: expected a string (for built-in components) or a class/function (for composite components) but got: undefined
+  - Location: tests/unit/WorkflowTracker.test.tsx:31, 38, 46
+  - Cause: Missing or incorrect component export from WorkflowTracker component
+
+  2. Dashboard State Management Tests
+
+  Issue: Mock data not loading correctly
+  - Test: "logs dashboard state for debugging"
+  - Expected: Dashboard to have activeAlert "alert-1" and criticalAlerts array with data
+  - Actual: activeAlert is undefined, criticalAlerts is empty array []
+  - Cause: Mock Service Worker (MSW) handlers not properly providing test data
+
+  3. Type Safety Validation Errors
+
+  Issue: Zod schema validation failures for WorkflowSession
+  - Missing Required Fields:
+    - started_at (string)
+    - completed_nodes (array)
+    - actions_taken (array)
+    - status (enum: 'Active' | 'Completed' | 'Paused')
+    - user_role (enum: 'Analyst' | 'Manager' | 'Client')
+
+  4. Data Loading Issues
+
+  Issue: Test components showing empty data states
+  - Endpoints count: 0 (expected > 0)
+  - Logs count: 0 (expected > 0)
+  - Missing alert data in test scenarios
+
+  Root Causes
+
+  1. Component Export Issues: WorkflowTracker component export/import mismatch
+  2. Mock Data Configuration: MSW handlers not properly configured for test scenarios
+  3. Schema Validation: WorkflowSession objects missing required properties
+  4. Test Setup: Mock data not being loaded correctly in test environment
+
+  Recommended Fixes
+
+  1. Fix WorkflowTracker component export in client/src/components/WorkflowTracker.tsx
+  2. Update MSW handlers in tests/mocks/handlers.ts to provide complete test data
+  3. Ensure WorkflowSession test objects include all required Zod schema fields
+  4. Verify test setup properly initializes mock data before component rendering
+
+  The type safety tests are mostly passing (showing that the core type system works), but the component and integration tests are failing due to missing mock
+  data and import issues.

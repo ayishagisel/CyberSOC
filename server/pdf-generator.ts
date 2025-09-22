@@ -297,9 +297,18 @@ export class PDFGenerator {
   }
 
   static async generatePDF(options: PDFGenerationOptions): Promise<Buffer> {
+    console.log('Starting PDF generation for:', options.userRole);
+    console.log('Report data:', { 
+      reportId: options.report.id, 
+      sessionId: options.report.session_id,
+      incidentTitle: options.report.incident_summary?.title 
+    });
+    
     try {
+      console.log('Launching browser...');
       const browser = await puppeteer.launch({
         headless: true,
+        executablePath: '/home/runner/.cache/puppeteer/chrome/linux-140.0.7339.82/chrome-linux64/chrome',
         args: [
           '--no-sandbox',
           '--disable-setuid-sandbox',
@@ -316,13 +325,19 @@ export class PDFGenerator {
           '--disable-features=VizDisplayCompositor'
         ]
       });
+      console.log('Browser launched successfully');
 
       try {
+        console.log('Creating new page...');
         const page = await browser.newPage();
+        
+        console.log('Setting page content...');
         await page.setContent(await this.createHTML(options), {
           waitUntil: 'networkidle0'
         });
+        console.log('Page content set successfully');
 
+        console.log('Generating PDF...');
         const pdfBuffer = await page.pdf({
           format: 'A4',
           printBackground: true,
@@ -340,10 +355,13 @@ export class PDFGenerator {
             </div>
           `
         });
+        console.log('PDF generated successfully, size:', pdfBuffer.length, 'bytes');
 
         return Buffer.from(pdfBuffer);
       } finally {
+        console.log('Closing browser...');
         await browser.close();
+        console.log('Browser closed');
       }
     } catch (error) {
       console.error('Puppeteer PDF generation failed:', error);

@@ -279,11 +279,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/reports/generate", authenticateJWT, async (req: AuthRequest, res) => {
     try {
       const { sessionId, format, userRole = 'Analyst' } = req.body;
+      console.log('Report generation request:', { 
+        sessionId, 
+        format, 
+        userRole, 
+        userId: req.user?.id,
+        timestamp: new Date().toISOString()
+      });
+      
       const report = await storage.generateReport(sessionId);
+      console.log('Report generated successfully:', { 
+        reportId: report.id, 
+        sessionId: report.session_id,
+        incidentTitle: report.incident_summary?.title 
+      });
       
       if (format === 'pdf') {
+        console.log('Starting PDF generation...');
         const { PDFGenerator } = await import('./pdf-generator');
         const pdfBuffer = await PDFGenerator.generatePDF({ userRole, report });
+        console.log('PDF generated successfully, buffer size:', pdfBuffer.length);
         
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename="incident-report-${new Date().toISOString().split('T')[0]}.pdf"`);
@@ -293,8 +308,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.json(report);
       }
     } catch (error) {
-      console.error('Report generation error:', error);
-      res.status(500).json({ error: "Failed to generate report" });
+      console.error('Report generation error details:', {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        sessionId: req.body.sessionId,
+        userRole: req.body.userRole,
+        format: req.body.format,
+        timestamp: new Date().toISOString()
+      });
+      res.status(500).json({ 
+        error: "Failed to generate report", 
+        details: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.message : String(error)) : undefined 
+      });
     }
   });
 

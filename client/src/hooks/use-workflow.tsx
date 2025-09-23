@@ -27,8 +27,9 @@ export function useWorkflow(alertId: string | null) {
             user_role: "Analyst",
             started_at: new Date().toISOString()
           });
-          console.log('Auto-created workflow session:', createResponse);
-          return createResponse as WorkflowSession;
+          const sessionData = await createResponse.json();
+          console.log('Auto-created workflow session:', sessionData);
+          return sessionData as WorkflowSession;
         } catch (error) {
           console.error('Failed to auto-create workflow session:', error);
           return null;

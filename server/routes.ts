@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import { storage } from "./storage";
 import { MOCK_USERS, type User, insertWorkflowSessionSchema } from "@shared/schema";
 import { z } from "zod";
+import { createGraphClient, MicrosoftGraphSecurity } from "./microsoft-graph-integration";
 
 // JWT secret for mock SSO
 const JWT_SECRET = process.env.JWT_SECRET || (() => {
@@ -59,6 +60,8 @@ const optionalAuth = (req: AuthRequest, res: Response, next: NextFunction) => {
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Initialize Microsoft Graph client
+  const graphClient = createGraphClient();
   // Auth routes
   app.post("/api/auth/login", (req: AuthRequest, res: Response) => {
     const { userType } = req.body;
@@ -517,6 +520,154 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       res.status(500).json({ error: "Failed to advance workflow" });
     }
+  });
+
+  // Microsoft Graph Security API Integration Endpoints
+  // Live security alerts from Microsoft Defender
+  app.get("/api/live/alerts", optionalAuth, async (req: AuthRequest, res) => {
+    try {
+      if (!graphClient) {
+        // Fallback to mock data when Graph client isn't configured
+        const alerts = await storage.getAlerts();
+        return res.json({
+          source: 'mock',
+          alerts: alerts.slice(0, 10),
+          message: 'Using mock data - configure Azure credentials for live data'
+        });
+      }
+
+      const { severity, status, top = 20 } = req.query;
+      const alerts = await graphClient.getSecurityAlerts({
+        severity: severity as any,
+        status: status as any,
+        top: parseInt(top as string)
+      });
+
+      res.json({
+        source: 'microsoft-graph',
+        alerts,
+        count: alerts.length
+      });
+    } catch (error) {
+      console.error('Error fetching live alerts:', error);
+      // Fallback to mock data on error
+      const alerts = await storage.getAlerts();
+      res.json({
+        source: 'mock-fallback',
+        alerts: alerts.slice(0, 10),
+        error: 'Failed to fetch live data, showing mock data'
+      });
+    }
+  });
+
+  // Live security incidents
+  app.get("/api/live/incidents", optionalAuth, async (req: AuthRequest, res) => {
+    try {
+      if (!graphClient) {
+        return res.json({
+          source: 'mock',
+          incidents: [],
+          message: 'Configure Azure credentials for live incident data'
+        });
+      }
+
+      const { status, severity, top = 10 } = req.query;
+      const incidents = await graphClient.getSecurityIncidents({
+        status: status as any,
+        severity: severity as any,
+        top: parseInt(top as string)
+      });
+
+      res.json({
+        source: 'microsoft-graph',
+        incidents,
+        count: incidents.length
+      });
+    } catch (error) {
+      console.error('Error fetching live incidents:', error);
+      res.status(500).json({ error: 'Failed to fetch security incidents' });
+    }
+  });
+
+  // Live device/endpoint data
+  app.get("/api/live/endpoints", optionalAuth, async (req: AuthRequest, res) => {
+    try {
+      if (!graphClient) {
+        // Fallback to mock data
+        const endpoints = await storage.getEndpoints();
+        return res.json({
+          source: 'mock',
+          endpoints,
+          message: 'Using mock data - configure Azure credentials for live data'
+        });
+      }
+
+      const { filter, top = 50 } = req.query;
+      const devices = await graphClient.getDevices({
+        filter: filter as string,
+        top: parseInt(top as string)
+      });
+
+      res.json({
+        source: 'microsoft-graph',
+        endpoints: devices,
+        count: devices.length
+      });
+    } catch (error) {
+      console.error('Error fetching live endpoints:', error);
+      // Fallback to mock data
+      const endpoints = await storage.getEndpoints();
+      res.json({
+        source: 'mock-fallback',
+        endpoints,
+        error: 'Failed to fetch live data, showing mock data'
+      });
+    }
+  });
+
+  // Security score and recommendations
+  app.get("/api/live/security-score", optionalAuth, async (req: AuthRequest, res) => {
+    try {
+      if (!graphClient) {
+        return res.json({
+          source: 'mock',
+          score: { currentScore: 75, maxScore: 100, category: 'Medium' },
+          message: 'Configure Azure credentials for live security score'
+        });
+      }
+
+      const securityScore = await graphClient.getSecurityScore();
+
+      res.json({
+        source: 'microsoft-graph',
+        score: securityScore
+      });
+    } catch (error) {
+      console.error('Error fetching security score:', error);
+      res.json({
+        source: 'mock-fallback',
+        score: { currentScore: 75, maxScore: 100, category: 'Medium' },
+        error: 'Failed to fetch live data, showing mock score'
+      });
+    }
+  });
+
+  // Configuration endpoint to check if live data is available
+  app.get("/api/live/status", (req, res) => {
+    res.json({
+      microsoftGraph: {
+        configured: !!graphClient,
+        endpoints: [
+          '/api/live/alerts',
+          '/api/live/incidents',
+          '/api/live/endpoints',
+          '/api/live/security-score'
+        ]
+      },
+      message: graphClient
+        ? 'Microsoft Graph integration active - live security data available'
+        : 'Microsoft Graph not configured - using mock data. Set AZURE_CLIENT_ID, AZURE_CLIENT_SECRET, AZURE_TENANT_ID environment variables'
+    });
   });
 
   const httpServer = createServer(app);

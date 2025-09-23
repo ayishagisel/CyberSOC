@@ -8,28 +8,38 @@ import LogViewer from "@/components/LogViewer";
 import AIAssistantPanel from "@/components/AIAssistantPanel";
 import ReportGenerator from "@/components/ReportGenerator";
 import BusinessImpactMetrics from "@/components/BusinessImpactMetrics";
+import { LiveDataStatus } from "@/components/live-data-status";
 import type { Alert, Endpoint, LogEntry } from "@shared/schema";
 import { useWorkflow } from "@/hooks/use-workflow";
+import { useLiveData } from "@/hooks/use-live-data";
 
 export default function Dashboard() {
   const [userRole, setUserRole] = useState<"Analyst" | "Manager" | "Client">("Analyst");
   const [selectedAlert, setSelectedAlert] = useState<string | null>(null);
   // const queryClient = useQueryClient();
-  
-  const { data: alerts = [], isLoading: alertsLoading } = useQuery<Alert[]>({
-    queryKey: ["/api/alerts"],
-  });
 
-  const { data: endpoints = [], isLoading: endpointsLoading } = useQuery<Endpoint[]>({
-    queryKey: ["/api/endpoints"],
-  });
+  // Use live data hook for alerts and endpoints
+  const {
+    alerts,
+    endpoints,
+    isLoading: liveDataLoading,
+    alertsSource,
+    endpointsSource,
+    setLiveDataEnabled,
+    isConfigured
+  } = useLiveData({ autoRefresh: true, refreshInterval: 30000 });
 
+  // Still use regular query for logs (not available in Graph API yet)
   const { data: logs = [], isLoading: logsLoading } = useQuery<LogEntry[]>({
     queryKey: ["/api/logs"],
   });
 
+  // Loading state combines live data and logs
+  const alertsLoading = liveDataLoading;
+  const endpointsLoading = liveDataLoading;
+
   // Calculate active alert for workflow - must be done before any early returns
-  const criticalAlerts = alerts.filter(alert => alert.severity === "Critical");
+  const criticalAlerts = alerts.filter(alert => alert.severity === "Critical" || alert.severity === "High");
   const activeAlert = selectedAlert ? alerts.find(a => a.id === selectedAlert) : criticalAlerts[0];
   
   // Initialize workflow hook with the active alert - this must always be called
@@ -105,7 +115,36 @@ export default function Dashboard() {
                 {userRole === "Manager" && "Incident Overview"}
                 {userRole === "Client" && "Security Status"}
               </h2>
-              
+
+              {/* Live Data Integration Status - Only show for Analysts */}
+              {userRole === "Analyst" && (
+                <div className="mb-4">
+                  <LiveDataStatus onDataSourceChange={setLiveDataEnabled} />
+                </div>
+              )}
+
+              {/* Data Source Indicator */}
+              {alertsSource && (
+                <div className="mb-4 flex items-center justify-between p-3 bg-muted/30 rounded-lg border">
+                  <div className="flex items-center space-x-2">
+                    {alertsSource === 'microsoft-graph' ? (
+                      <>
+                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                        <span className="text-sm font-medium text-green-700">Live Microsoft Defender Data</span>
+                      </>
+                    ) : (
+                      <>
+                        <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                        <span className="text-sm font-medium text-orange-700">Training Simulation Data</span>
+                      </>
+                    )}
+                  </div>
+                  <span className="text-xs text-muted-foreground">
+                    {alerts.length} alert{alerts.length !== 1 ? 's' : ''} loaded
+                  </span>
+                </div>
+              )}
+
               {criticalAlerts.map((alert) => (
                 <AlertCard
                   key={alert.id}
@@ -119,11 +158,35 @@ export default function Dashboard() {
 
             {userRole === "Analyst" && (
               <>
-                <AssetTable 
-                  endpoints={endpoints}
-                  selectedAlert={activeAlert}
-                />
-                
+                <div className="mb-4">
+                  {/* Endpoints Data Source Indicator */}
+                  {endpointsSource && (
+                    <div className="mb-2 flex items-center justify-between p-2 bg-muted/20 rounded border">
+                      <div className="flex items-center space-x-2">
+                        {endpointsSource === 'microsoft-graph' ? (
+                          <>
+                            <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
+                            <span className="text-xs font-medium text-green-700">Live Device Data</span>
+                          </>
+                        ) : (
+                          <>
+                            <div className="w-1.5 h-1.5 bg-orange-500 rounded-full"></div>
+                            <span className="text-xs font-medium text-orange-700">Mock Device Data</span>
+                          </>
+                        )}
+                      </div>
+                      <span className="text-xs text-muted-foreground">
+                        {endpoints.length} endpoint{endpoints.length !== 1 ? 's' : ''}
+                      </span>
+                    </div>
+                  )}
+
+                  <AssetTable
+                    endpoints={endpoints}
+                    selectedAlert={activeAlert}
+                  />
+                </div>
+
                 <LogViewer logs={logs} />
               </>
             )}

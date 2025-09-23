@@ -1,40 +1,30 @@
-# 🛡️ Cybersecurity Incident Response Playbook Assistant
+# 🛡️ Cybersecurity Incident Response Training Platform
 
-A comprehensive web-based training and simulation tool designed to guide cybersecurity analysts through mock ransomware attack scenarios. This application serves as an MVP for incident response training, featuring an interactive workflow system, role-based views, and comprehensive logging and reporting capabilities.
+A comprehensive web-based training and simulation platform that guides cybersecurity professionals through realistic incident response scenarios. This application bridges the gap between theoretical knowledge and practical experience, featuring live security data integration, interactive workflow systems, and comprehensive reporting capabilities.
 
 ## 🚀 Features
 
-### ✅ Phase 1 - MVP (Completed)
-- **Analyst View**: Full hardcoded ransomware simulation flow
-- **AI Assistant Panel**: Branching logic from local JSON playbook data
-- **Alert Dashboard**: Simulated alerts with detailed information
-- **Log Viewer**: Security event logs with filtering capabilities
-- **Professional Report Generation**: Export to styled PDF, JSON, and TXT formats
+### ✅ Phase 1 - MVP Foundation (Completed)
+- **Interactive Workflow System**: Howard University Incident Response Playbook implementation
+- **AI Assistant Panel**: Context-aware guidance with branching logic
+- **Alert Dashboard**: Comprehensive security alert management
+- **Professional Reporting**: Multi-format export (PDF, JSON, TXT) with role-specific layouts
+- **MITRE ATT&CK Integration**: Technique mapping and adversary behavior analysis
 
-### 🔄 Phase 2 - Growth (In Progress - ~80% Complete)
-- **Role-Based Views**: Dynamic UI for Analyst, Manager, and Client roles
-- **Backend System**: Express.js server with PostgreSQL database support
-- **Enhanced Features**: Nearly complete with only authentication remaining
+### ✅ Phase 2 - Enterprise Backend (Completed)
+- **Role-Based Access Control**: Dynamic UI for Analyst, Manager, and Client roles
+- **Express.js Backend**: RESTful API with PostgreSQL database integration
+- **Dual Storage System**: File-based and database storage with behavioral parity
+- **Multiple Scenarios**: Ransomware, phishing, and credential compromise simulations
+- **Real-time Metrics**: Business impact tracking and SOC performance monitoring
+- **Workflow Persistence**: Session management with progress tracking
 
-#### ✅ Completed Phase 2 Features:
-- Express.js backend with comprehensive API routes
-- PostgreSQL database integration with Drizzle ORM
-- Complete Manager and Client views with dynamic business metrics
-- File and database storage with full behavioral parity
-- Additional playbook scenarios (phishing, credential compromise)
-- Professional styled PDF report generation with role-specific layouts
-- Real-time business impact tracking and metrics
-- New simulation functionality with scenario switching
-- Comprehensive workflow tracking system
-
-#### 🚧 Phase 2 Remaining:
-- JWT Authentication system (login, registration, protected routes)
-
-### 📋 Phase 3 - Enterprise (Planned)
-- Live API integrations (Microsoft Graph Security API)
-- Visual playbook editor for admins
-- Analytics dashboard with SOC metrics
-- Team collaboration features
+### ✅ Phase 3 - Live Data Integration (Completed)
+- **Microsoft Graph Security API**: Real-time Microsoft Defender alert integration
+- **Live Device Management**: Microsoft Intune device data with security status
+- **Hybrid Data Sources**: Seamless switching between live and simulation data
+- **Security Score Monitoring**: Microsoft Secure Score integration
+- **Incident Correlation**: Real security incidents with training workflows
 
 ## 🏗️ Architecture
 
@@ -50,20 +40,30 @@ A comprehensive web-based training and simulation tool designed to guide cyberse
 - **Express.js** server with TypeScript
 - **PostgreSQL** database with Neon support
 - **Drizzle ORM** for database operations
-- **File-based storage** for mock data
+- **Microsoft Graph Security API** for live data
+- **Dual storage system** (database + file-based)
 - **RESTful API** structure
 
+### Integrations
+- **Microsoft Graph Security API**: Real-time alert and incident data
+- **Microsoft Intune**: Device management and compliance status
+- **Microsoft Secure Score**: Security posture monitoring
+- **Azure Active Directory**: Identity and access management data
+
 ### Key Components
-- **Workflow Engine**: Guided incident response workflows
-- **MITRE ATT&CK Integration**: Technique mapping and visualization
+- **Live Data Engine**: Real-time security data ingestion and processing
+- **Workflow Engine**: Howard University Incident Response Playbook implementation
+- **MITRE ATT&CK Integration**: Technique mapping and adversary behavior analysis
 - **Role-Based Access**: Different views for analysts, managers, and clients
-- **Report Generation**: Automated post-incident reporting
+- **Hybrid Data Sources**: Seamless switching between live and simulation data
+- **Report Generation**: Automated post-incident reporting with live data correlation
 
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Node.js 18+ 
+- Node.js 18+
 - PostgreSQL database (or use the built-in Neon database)
+- Microsoft Azure account with appropriate Graph API permissions (optional for live data)
 
 ### Installation
 
@@ -72,64 +72,98 @@ A comprehensive web-based training and simulation tool designed to guide cyberse
 npm install
 ```
 
-2. **Set up the database**:
+2. **Configure environment variables** (optional for Microsoft Graph integration):
+```bash
+# Create .env file with your Azure credentials
+AZURE_CLIENT_ID=your-client-id
+AZURE_CLIENT_SECRET=your-client-secret
+AZURE_TENANT_ID=your-tenant-id
+```
+
+3. **Set up the database**:
 ```bash
 npm run db:push
 ```
 
-3. **Start the development server**:
+4. **Start the development server**:
 ```bash
 npm run dev
 ```
 
-4. **Access the application**:
+5. **Access the application**:
    - Open your browser to `http://localhost:5000`
-   - The app will automatically load with sample incident data
+   - The app will automatically load with simulation data
+   - If Azure credentials are configured, live Microsoft Defender data will be available
 
 ## 📱 Usage
 
 ### Role-Based Views
 
 **🔍 Analyst View**
-- Complete access to technical details
-- Interactive workflow progression
-- AI assistant with recommended actions
-- Detailed endpoint and log analysis
-- Technical report generation
+- Complete access to technical details and live security data
+- Interactive Howard University Incident Response workflow
+- AI assistant with phase-specific recommendations
+- Real-time endpoint and log analysis
+- Live Microsoft Defender alert correlation
+- Technical report generation with live data integration
 
 **👔 Manager View**
-- Executive summary and business impact
-- High-level incident overview
-- Status tracking and metrics
-- Executive reporting
+- Executive summary with real-time business impact metrics
+- High-level incident overview with live security posture
+- Status tracking across multiple data sources
+- Executive reporting with Microsoft Secure Score integration
 
 **👤 Client View**
-- Simplified status updates
-- Impact on business operations
+- Simplified status updates with live security health
+- Impact on business operations with real-time metrics
 - Communication-focused interface
-- Non-technical explanations
+- Non-technical explanations of live security events
+
+### Data Sources
+
+**Live Data Mode** (with Azure credentials configured):
+- Real Microsoft Defender alerts and incidents
+- Live device compliance and security status
+- Microsoft Secure Score and security recommendations
+- Real-time threat intelligence and indicators
+
+**Training Mode** (default):
+- Realistic simulated ransomware scenarios
+- Mock phishing and credential compromise incidents
+- Controlled training environment with predictable outcomes
 
 ### Sample Workflows
 
-1. **Start Investigation**: Click on any critical alert
-2. **Follow AI Guidance**: Use the AI assistant panel for step-by-step recommendations
-3. **Take Actions**: Isolate endpoints, lock accounts, analyze traffic
-4. **Generate Reports**: Export incident reports in multiple formats
-5. **Track Progress**: Monitor workflow phases and MITRE technique mapping
+1. **Data Source Selection**: Choose between live Microsoft data or training simulations
+2. **Start Investigation**: Click on any critical alert (live or simulated)
+3. **Follow Guided Workflow**: Progress through the 6-phase Howard University playbook
+4. **AI-Assisted Actions**: Get context-aware recommendations for each incident phase
+5. **Take Response Actions**: Isolate endpoints, lock accounts, analyze traffic patterns
+6. **Generate Reports**: Export comprehensive incident reports with live data correlation
+7. **Track Progress**: Monitor workflow phases with MITRE ATT&CK technique mapping
 
 ## 🗂️ Project Structure
 
 ```
-├── client/src/           # Frontend React application
-│   ├── components/       # Reusable UI components
-│   ├── pages/           # Application pages
-│   ├── hooks/           # Custom React hooks
-│   └── lib/             # Utilities and configurations
-├── server/              # Backend Express server
-│   ├── data/           # Mock JSON data files
-│   └── routes.ts       # API endpoint definitions
-├── shared/             # Shared TypeScript schemas
-└── replit.md           # Project documentation
+├── client/src/                    # Frontend React application
+│   ├── components/                # Reusable UI components
+│   │   ├── live-data-status.tsx  # Live data integration controls
+│   │   └── ...                   # Other UI components
+│   ├── pages/                    # Application pages
+│   │   └── dashboard.tsx         # Main dashboard with role-based views
+│   ├── hooks/                    # Custom React hooks
+│   │   ├── use-workflow.tsx      # Howard University workflow management
+│   │   ├── use-live-data.ts      # Microsoft Graph data integration
+│   │   └── ...                   # Other custom hooks
+│   └── lib/                      # Utilities and configurations
+├── server/                       # Backend Express server
+│   ├── data/                     # Mock JSON training data
+│   ├── microsoft-graph-integration.ts  # Live Microsoft Graph API client
+│   ├── routes.ts                 # API endpoint definitions
+│   └── storage.ts                # Dual storage system (file + database)
+├── shared/                       # Shared TypeScript schemas
+│   └── schema.ts                 # Zod schemas for data validation
+└── .env                          # Azure credentials (not in repo)
 ```
 
 ## 🛠️ Available Scripts
@@ -155,42 +189,100 @@ For detailed test coverage and reports, see `tests/README.md`.
 ## 🔧 Configuration
 
 ### Environment Variables
-- `DATABASE_URL`: PostgreSQL connection string
+
+**Required for Database:**
+- `DATABASE_URL`: PostgreSQL connection string (optional - uses file storage if not set)
 - `NODE_ENV`: Development/production environment
 
+**Optional for Live Microsoft Graph Integration:**
+- `AZURE_CLIENT_ID`: Microsoft App Registration client ID
+- `AZURE_CLIENT_SECRET`: Microsoft App Registration client secret
+- `AZURE_TENANT_ID`: Azure Active Directory tenant ID
+
+### Microsoft Graph API Setup
+
+To enable live data integration:
+
+1. **Create Azure App Registration**:
+   - Go to Azure Portal → App Registrations → New Registration
+   - Grant these API permissions:
+     - `SecurityEvents.Read.All` (Application)
+     - `Device.Read.All` (Application)
+     - `SecurityAlert.Read.All` (Application)
+
+2. **Configure Application**:
+   - Create client secret
+   - Note the Application (client) ID and Directory (tenant) ID
+   - Add these to your `.env` file
+
+3. **Grant Admin Consent**:
+   - Admin must consent to the application permissions
+   - Application will automatically detect and use live data when credentials are valid
+
 ### Customization
-- **Playbooks**: Modify `server/data/playbook.json` for custom workflows
-- **Alerts**: Update `server/data/alerts.json` for different scenarios
-- **Styling**: Customize colors in `client/src/index.css`
+- **Playbooks**: Modify `server/data/playbook.json` for custom training workflows
+- **Training Scenarios**: Update `server/data/alerts.json` for different simulation scenarios
+- **Live Data Sources**: Configure Azure permissions for different Graph API endpoints
+- **Styling**: Customize colors and themes in `client/src/index.css`
 
-## 🔧 Next Development Priorities
+## 🔧 Future Development Opportunities
 
-### Phase 2 Completion
-- **JWT Authentication System**: User registration, login, session management, and protected routes
-- **Role Assignment**: Associate users with specific roles (Analyst, Manager, Client)
+### Authentication & User Management
+- **JWT Authentication System**: User registration, login, session management
+- **Role Assignment**: Associate users with specific organizational roles
+- **Multi-tenant Support**: Separate training environments for different organizations
 
-### Phase 3 Planning
-- **Live API Integrations**: Microsoft Graph Security API for real security data
-- **Visual Playbook Editor**: Admin interface for building custom response workflows
-- **Analytics Dashboard**: SOC metrics tracking (MTTD, MTTR) and performance monitoring
-- **Team Collaboration**: Incident assignment, commenting, and workflow coordination
+### Advanced Enterprise Features
+- **Visual Playbook Editor**: Drag-and-drop interface for building custom response workflows
+- **Analytics Dashboard**: SOC metrics tracking (MTTD, MTTR, response effectiveness)
+- **Team Collaboration**: Incident assignment, real-time commenting, and workflow coordination
+- **Integration Marketplace**: Additional SIEM, SOAR, and security tool integrations
+- **Custom Training Scenarios**: AI-generated incident scenarios based on organization threat profile
 
 ## 🤝 Contributing
 
-This is a training application designed to simulate cybersecurity incident response. Current development priorities:
+This platform serves as a comprehensive cybersecurity incident response training solution with live security data integration. The system is production-ready and provides:
 
-1. **Authentication System**: JWT-based user registration, login, and role management
-2. **Enterprise Features**: Live API integrations with security tools (Microsoft Graph, SIEM)
-3. **Visual Playbook Editor**: Drag-and-drop interface for building custom response workflows
-4. **Analytics & Collaboration**: SOC metrics dashboards and team collaboration features
+**Core Capabilities:**
+- ✅ **Live Microsoft Security Data**: Real-time alerts, incidents, and device status
+- ✅ **Training Simulations**: Controlled ransomware, phishing, and compromise scenarios
+- ✅ **Howard University Playbook**: 6-phase incident response workflow implementation
+- ✅ **Role-Based Access**: Analyst, Manager, and Client views with appropriate data access
+- ✅ **Professional Reporting**: Multi-format export with live data correlation
+
+**Enhancement Opportunities:**
+- Authentication and user management system
+- Visual playbook editor for custom workflows
+- Advanced analytics and SOC metrics dashboards
+- Multi-tenant support for organizational training programs
+- Additional security tool integrations (SIEM, SOAR, etc.)
 
 ## 📚 Learning Resources
 
-This application demonstrates:
-- **NIST Cybersecurity Framework**: Response procedures
-- **MITRE ATT&CK**: Adversary technique mapping
-- **Incident Response**: Industry-standard workflows
-- **Modern Web Development**: React, TypeScript, Express.js
+This application demonstrates industry-standard practices and frameworks:
+
+- **Howard University Incident Response Playbook**: Academic-backed response methodology
+- **NIST Cybersecurity Framework**: Industry-standard response procedures
+- **MITRE ATT&CK Framework**: Adversary technique mapping and threat intelligence
+- **Microsoft Graph Security API**: Enterprise security data integration patterns
+- **Modern Web Architecture**: React, TypeScript, Express.js, and PostgreSQL
+
+## 🎯 Use Cases
+
+**Cybersecurity Education:**
+- University cybersecurity programs and certification courses
+- Corporate security awareness training
+- SOC analyst onboarding and skill development
+
+**Professional Training:**
+- Incident response team exercises with live data
+- Tabletop simulations with realistic scenarios
+- Cross-functional team coordination training
+
+**Enterprise Security:**
+- Real-time incident response with integrated workflows
+- Security posture monitoring and reporting
+- Compliance demonstration and audit preparation
 
 ## 📄 License
 
@@ -198,4 +290,4 @@ This project is designed for educational and training purposes in cybersecurity 
 
 ---
 
-🛡️ **Built for cybersecurity training and education** 🛡️
+🛡️ **Production-ready cybersecurity training platform with live Microsoft security data integration** 🛡️

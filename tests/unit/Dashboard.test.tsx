@@ -2,8 +2,10 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { ReactNode } from 'react'
 import Dashboard from '@/pages/dashboard'
 import { useWorkflow } from '@/hooks/use-workflow'
+import { AuthProvider } from '@/hooks/use-auth'
 import type { Alert, Endpoint, LogEntry } from '@shared/schema'
 
 // Mock the workflow hook
@@ -218,7 +220,9 @@ describe('Dashboard', () => {
   const renderDashboard = () => {
     return render(
       <QueryClientProvider client={queryClient}>
-        <Dashboard />
+        <AuthProvider>
+          <Dashboard />
+        </AuthProvider>
       </QueryClientProvider>
     )
   }

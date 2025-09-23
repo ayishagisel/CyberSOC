@@ -217,17 +217,17 @@ export function useLiveData(options: LiveDataHookOptions = {}) {
 
   // Set live data preference
   const setLiveDataEnabled = useCallback((enabled: boolean) => {
-    if (!status?.microsoftGraph.configured && enabled) {
+    if (!status?.microsoftGraph?.configured && enabled) {
       console.warn('Cannot enable live data: Microsoft Graph not configured');
       return;
     }
     setUseLiveData(enabled);
-  }, [status?.microsoftGraph.configured]);
+  }, [status?.microsoftGraph?.configured]);
 
   return {
     // Status
     status,
-    isConfigured: status?.microsoftGraph.configured || false,
+    isConfigured: status?.microsoftGraph?.configured || false,
     useLiveData,
     setLiveDataEnabled,
 

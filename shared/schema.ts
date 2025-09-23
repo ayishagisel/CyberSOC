@@ -188,6 +188,16 @@ export const reports = pgTable('reports', {
   recommendations: json('recommendations').$type<string[]>().notNull().default([]),
 });
 
+export const users = pgTable('users', {
+  id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
+  email: varchar('email').notNull().unique(),
+  password_hash: varchar('password_hash').notNull(),
+  name: varchar('name').notNull(),
+  role: varchar('role').notNull().$type<"Analyst" | "Manager" | "Client">(),
+  created_at: timestamp('created_at').notNull().defaultNow(),
+  last_login: timestamp('last_login'),
+});
+
 // Relations
 export const alertsRelations = relations(alerts, ({ many }) => ({
   workflow_sessions: many(workflow_sessions),
@@ -236,6 +246,8 @@ export type WorkflowSession = typeof workflow_sessions.$inferSelect;
 export type InsertWorkflowSession = typeof workflow_sessions.$inferInsert;
 export type Report = typeof reports.$inferSelect;
 export type InsertReport = typeof reports.$inferInsert;
+export type DbUser = typeof users.$inferSelect;
+export type InsertUser = typeof users.$inferInsert;
 
 // User authentication types
 export interface User {

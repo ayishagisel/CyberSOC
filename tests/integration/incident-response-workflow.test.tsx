@@ -4,8 +4,28 @@ import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { setupServer } from 'msw/node'
 import { http, HttpResponse } from 'msw'
+import { ReactNode } from 'react'
 import Dashboard from '@/pages/dashboard'
 import Login from '@/pages/login'
+import { AuthProvider } from '@/hooks/use-auth'
+
+// Test wrapper component
+function TestWrapper({ children }: { children: ReactNode }) {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false },
+      mutations: { retry: false },
+    },
+  })
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        {children}
+      </AuthProvider>
+    </QueryClientProvider>
+  )
+}
 
 // Mock data for integration testing
 const mockIncidentData = {
@@ -207,7 +227,7 @@ describe('Incident Response Workflow Integration Tests', () => {
       vi.doMock('@/hooks/use-workflow', () => ({ useWorkflow: () => mockWorkflow }))
 
       // Step 1: Login as Analyst
-      const { unmount: unmountLogin } = render(<Login />)
+      const { unmount: unmountLogin } = render(<Login />, { wrapper: TestWrapper })
 
       await user.click(screen.getByTestId('role-analyst'))
       await user.click(screen.getByTestId('login-button'))
@@ -506,7 +526,7 @@ describe('Incident Response Workflow Integration Tests', () => {
 
       const user = userEvent.setup()
 
-      render(<LoginPage />)
+      render(<Login />, { wrapper: TestWrapper })
 
       await user.click(screen.getByTestId('role-analyst'))
       await user.click(screen.getByTestId('login-button'))

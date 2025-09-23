@@ -1,10 +1,12 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import jwt from "jsonwebtoken";
+import bcrypt from "bcryptjs";
 import { storage } from "./storage";
-import { MOCK_USERS, type User, insertWorkflowSessionSchema } from "@shared/schema";
+import { MOCK_USERS, type User, type DbUser, users, insertWorkflowSessionSchema } from "@shared/schema";
 import { z } from "zod";
 import { createGraphClient, MicrosoftGraphSecurity } from "./microsoft-graph-integration";
+import { eq } from "drizzle-orm";
 
 // JWT secret for mock SSO
 const JWT_SECRET = process.env.JWT_SECRET || (() => {
@@ -20,7 +22,7 @@ interface AuthRequest extends Request {
 }
 
 // JWT Middleware
-const authenticateJWT = (req: AuthRequest, res: Response, next: NextFunction) => {
+const authenticateJWT = async (req: AuthRequest, res: Response, next: NextFunction) => {
   const token = req.cookies?.auth_token || req.headers.authorization?.replace('Bearer ', '');
   
   if (!token) {
@@ -29,12 +31,32 @@ const authenticateJWT = (req: AuthRequest, res: Response, next: NextFunction) =>
   
   try {
     const decoded = jwt.verify(token, JWT_SECRET) as { userId: string; email: string; role: string };
-    const user = MOCK_USERS.find(u => u.id === decoded.userId);
-    
+
+    // Try to find user in database first
+    let user: User | undefined;
+    try {
+      const dbUser = await storage.findUserById(decoded.userId);
+      if (dbUser) {
+        user = {
+          id: dbUser.id,
+          email: dbUser.email,
+          name: dbUser.name,
+          role: dbUser.role
+        };
+      }
+    } catch (error) {
+      // Database lookup failed, fall back to mock users
+    }
+
+    // Fall back to mock users if not found in database
+    if (!user) {
+      user = MOCK_USERS.find(u => u.id === decoded.userId);
+    }
+
     if (!user) {
       return res.status(401).json({ error: "Invalid user" });
     }
-    
+
     req.user = user;
     next();
   } catch (error) {
@@ -43,19 +65,40 @@ const authenticateJWT = (req: AuthRequest, res: Response, next: NextFunction) =>
 };
 
 // Optional auth middleware (doesn't block if no token)
-const optionalAuth = (req: AuthRequest, res: Response, next: NextFunction) => {
+const optionalAuth = async (req: AuthRequest, res: Response, next: NextFunction) => {
   const token = req.cookies?.auth_token || req.headers.authorization?.replace('Bearer ', '');
-  
+
   if (token) {
     try {
       const decoded = jwt.verify(token, JWT_SECRET) as { userId: string; email: string; role: string };
-      const user = MOCK_USERS.find(u => u.id === decoded.userId);
+
+      // Try to find user in database first
+      let user: User | undefined;
+      try {
+        const dbUser = await storage.findUserById(decoded.userId);
+        if (dbUser) {
+          user = {
+            id: dbUser.id,
+            email: dbUser.email,
+            name: dbUser.name,
+            role: dbUser.role
+          };
+        }
+      } catch (error) {
+        // Database lookup failed, fall back to mock users
+      }
+
+      // Fall back to mock users if not found in database
+      if (!user) {
+        user = MOCK_USERS.find(u => u.id === decoded.userId);
+      }
+
       if (user) req.user = user;
     } catch (error) {
       // Ignore invalid tokens for optional auth
     }
   }
-  
+
   next();
 };
 
@@ -63,32 +106,129 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize Microsoft Graph client
   const graphClient = createGraphClient();
   // Auth routes
-  app.post("/api/auth/login", (req: AuthRequest, res: Response) => {
-    const { userType } = req.body;
-    
-    // Find user based on type selection
-    const user = MOCK_USERS.find(u => u.role === userType);
-    if (!user) {
-      return res.status(400).json({ error: "Invalid user type" });
+  app.post("/api/auth/register", async (req: Request, res: Response) => {
+    try {
+      const { email, password, name, role } = req.body;
+
+      // Validate input
+      if (!email || !password || !name || !role) {
+        return res.status(400).json({ error: "All fields are required" });
+      }
+
+      if (!["Analyst", "Manager", "Client"].includes(role)) {
+        return res.status(400).json({ error: "Invalid role" });
+      }
+
+      if (password.length < 6) {
+        return res.status(400).json({ error: "Password must be at least 6 characters" });
+      }
+
+      // Check if user already exists
+      const existingUser = await storage.findUser(email);
+      if (existingUser) {
+        return res.status(400).json({ error: "User already exists" });
+      }
+
+      // Hash password
+      const passwordHash = await bcrypt.hash(password, 12);
+
+      // Create user
+      const newUser = await storage.createUser({
+        email,
+        password_hash: passwordHash,
+        name,
+        role: role as "Analyst" | "Manager" | "Client"
+      });
+
+      // Generate JWT token
+      const token = jwt.sign(
+        { userId: newUser.id, email: newUser.email, role: newUser.role },
+        JWT_SECRET,
+        { expiresIn: '24h' }
+      );
+
+      // Set secure cookie
+      res.cookie('auth_token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        path: '/',
+        maxAge: 24 * 60 * 60 * 1000 // 24 hours
+      });
+
+      // Return user without password
+      const { password_hash, ...userResponse } = newUser;
+      res.status(201).json({ user: userResponse });
+
+    } catch (error) {
+      console.error('Registration error:', error);
+      res.status(500).json({ error: "Internal server error" });
     }
-    
-    // Generate JWT token
-    const token = jwt.sign(
-      { userId: user.id, email: user.email, role: user.role },
-      JWT_SECRET,
-      { expiresIn: '24h' }
-    );
-    
-    // Set secure cookie  
-    res.cookie('auth_token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      path: '/',
-      maxAge: 24 * 60 * 60 * 1000 // 24 hours
-    });
-    
-    res.json({ user }); // Don't expose token in response body
+  });
+
+  app.post("/api/auth/login", async (req: AuthRequest, res: Response) => {
+    try {
+      const { email, password, userType } = req.body;
+
+      let user: User;
+
+      if (email && password) {
+        // Real login with email/password
+        const dbUser = await storage.findUser(email);
+        if (!dbUser) {
+          return res.status(401).json({ error: "Invalid credentials" });
+        }
+
+        const isValidPassword = await bcrypt.compare(password, dbUser.password_hash);
+        if (!isValidPassword) {
+          return res.status(401).json({ error: "Invalid credentials" });
+        }
+
+        // Update last login
+        await storage.updateUserLastLogin(dbUser.id);
+
+        // Convert DbUser to User (excluding sensitive fields)
+        user = {
+          id: dbUser.id,
+          email: dbUser.email,
+          name: dbUser.name,
+          role: dbUser.role
+        };
+
+      } else if (userType) {
+        // Demo login with role selection (for backward compatibility)
+        const mockUser = MOCK_USERS.find(u => u.role === userType);
+        if (!mockUser) {
+          return res.status(400).json({ error: "Invalid user type" });
+        }
+        user = mockUser;
+
+      } else {
+        return res.status(400).json({ error: "Email and password, or userType required" });
+      }
+
+      // Generate JWT token
+      const token = jwt.sign(
+        { userId: user.id, email: user.email, role: user.role },
+        JWT_SECRET,
+        { expiresIn: '24h' }
+      );
+
+      // Set secure cookie
+      res.cookie('auth_token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        path: '/',
+        maxAge: 24 * 60 * 60 * 1000 // 24 hours
+      });
+
+      res.json({ user });
+
+    } catch (error) {
+      console.error('Login error:', error);
+      res.status(500).json({ error: "Internal server error" });
+    }
   });
   
   app.get("/api/auth/me", authenticateJWT, (req: AuthRequest, res: Response) => {

@@ -1,5 +1,5 @@
-import type { Alert, Endpoint, LogEntry, Playbook, WorkflowSession, Report, InsertAlert, InsertEndpoint, InsertLogEntry, InsertPlaybook, InsertWorkflowSession, InsertReport } from "@shared/schema";
-import { alerts, endpoints, logs, playbooks, workflow_sessions, reports } from "@shared/schema";
+import type { Alert, Endpoint, LogEntry, Playbook, WorkflowSession, Report, DbUser, InsertAlert, InsertEndpoint, InsertLogEntry, InsertPlaybook, InsertWorkflowSession, InsertReport, InsertUser } from "@shared/schema";
+import { alerts, endpoints, logs, playbooks, workflow_sessions, reports, users } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, asc } from "drizzle-orm";
 import { randomUUID } from "crypto";
@@ -34,6 +34,12 @@ export interface IStorage {
 
   // Reports
   generateReport(sessionId?: string): Promise<Report>;
+
+  // Users
+  findUser(email: string): Promise<DbUser | undefined>;
+  findUserById(id: string): Promise<DbUser | undefined>;
+  createUser(userData: Omit<InsertUser, "id" | "created_at" | "last_login">): Promise<DbUser>;
+  updateUserLastLogin(id: string): Promise<void>;
 }
 
 export class FileStorage implements IStorage {
@@ -251,8 +257,27 @@ export class FileStorage implements IStorage {
     // Write updated data back to files
     await this.writeJsonFile("endpoints.json", updatedEndpoints);
     await this.writeJsonFile("alerts.json", updatedAlerts);
-    
+
     return { activeAlertId: config.alertId, scenarioName: config.name };
+  }
+
+  // User methods (FileStorage doesn't support real users, falls back to mock data)
+  async findUser(email: string): Promise<DbUser | undefined> {
+    // FileStorage doesn't support user persistence
+    return undefined;
+  }
+
+  async findUserById(id: string): Promise<DbUser | undefined> {
+    // FileStorage doesn't support user persistence
+    return undefined;
+  }
+
+  async createUser(userData: Omit<InsertUser, "id" | "created_at" | "last_login">): Promise<DbUser> {
+    throw new Error("User registration not supported with file storage. Please use database storage.");
+  }
+
+  async updateUserLastLogin(id: string): Promise<void> {
+    // FileStorage doesn't support user persistence
   }
 }
 
@@ -473,6 +498,28 @@ export class DatabaseStorage implements IStorage {
       .where(eq(alerts.id, config.alertId));
     
     return { activeAlertId: config.alertId, scenarioName: config.name };
+  }
+
+  // User methods
+  async findUser(email: string): Promise<DbUser | undefined> {
+    const result = await db.select().from(users).where(eq(users.email, email)).limit(1);
+    return result[0];
+  }
+
+  async findUserById(id: string): Promise<DbUser | undefined> {
+    const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
+    return result[0];
+  }
+
+  async createUser(userData: Omit<InsertUser, "id" | "created_at" | "last_login">): Promise<DbUser> {
+    const result = await db.insert(users).values(userData).returning();
+    return result[0];
+  }
+
+  async updateUserLastLogin(id: string): Promise<void> {
+    await db.update(users)
+      .set({ last_login: new Date() })
+      .where(eq(users.id, id));
   }
 }
 

@@ -8,6 +8,8 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (userType: "Analyst" | "Manager" | "Client") => Promise<void>;
+  loginWithCredentials: (email: string, password: string) => Promise<void>;
+  register: (email: string, password: string, name: string, role: "Analyst" | "Manager" | "Client") => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -51,6 +53,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
   });
 
+  const credentialLoginMutation = useMutation({
+    mutationFn: async ({ email, password }: { email: string; password: string }) => {
+      const response = await apiRequest("POST", "/api/auth/login", { email, password });
+      return await response.json();
+    },
+    onSuccess: (data) => {
+      setUser(data.user);
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      queryClient.invalidateQueries();
+    },
+  });
+
+  const registerMutation = useMutation({
+    mutationFn: async ({ email, password, name, role }: {
+      email: string;
+      password: string;
+      name: string;
+      role: "Analyst" | "Manager" | "Client"
+    }) => {
+      const response = await apiRequest("POST", "/api/auth/register", { email, password, name, role });
+      return await response.json();
+    },
+    onSuccess: (data) => {
+      setUser(data.user);
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      queryClient.invalidateQueries();
+    },
+  });
+
   const logoutMutation = useMutation({
     mutationFn: async () => {
       await apiRequest("POST", "/api/auth/logout", {});
@@ -65,6 +96,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await loginMutation.mutateAsync(userType);
   };
 
+  const loginWithCredentials = async (email: string, password: string) => {
+    await credentialLoginMutation.mutateAsync({ email, password });
+  };
+
+  const register = async (email: string, password: string, name: string, role: "Analyst" | "Manager" | "Client") => {
+    await registerMutation.mutateAsync({ email, password, name, role });
+  };
+
   const logout = async () => {
     await logoutMutation.mutateAsync();
   };
@@ -74,8 +113,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       value={{
         user,
         isAuthenticated: !!user,
-        isLoading: isLoading || loginMutation.isPending || logoutMutation.isPending,
+        isLoading: isLoading || loginMutation.isPending || credentialLoginMutation.isPending || registerMutation.isPending || logoutMutation.isPending,
         login,
+        loginWithCredentials,
+        register,
         logout,
       }}
     >

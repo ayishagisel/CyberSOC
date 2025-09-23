@@ -301,14 +301,14 @@ export class PDFGenerator {
     console.log('Report data:', { 
       reportId: options.report.id, 
       sessionId: options.report.session_id,
-      incidentTitle: options.report.incident_summary?.title 
+      incidentTitle: (options.report.incident_summary as any)?.title 
     });
     
     try {
       console.log('Launching browser...');
       const browser = await puppeteer.launch({
         headless: true,
-        executablePath: '/home/runner/.cache/puppeteer/chrome/linux-140.0.7339.82/chrome-linux64/chrome',
+        executablePath: '/nix/store/zi4f80l169xlmivz8vja8wlphq74qqk0-chromium-125.0.6422.141/bin/chromium-browser',
         args: [
           '--no-sandbox',
           '--disable-setuid-sandbox',

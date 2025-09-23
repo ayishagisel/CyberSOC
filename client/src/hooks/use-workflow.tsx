@@ -8,13 +8,32 @@ export function useWorkflow(alertId: string | null) {
   const [completedNodes, setCompletedNodes] = useState<string[]>([]);
   const [workflow, setWorkflow] = useState<WorkflowSession | null>(null);
 
-  // Fetch existing workflow session for this alert
-  const { data: existingSession } = useQuery<WorkflowSession | null>({
+  // Fetch existing workflow session for this alert with auto-creation on 404
+  const { data: existingSession, refetch: refetchSession } = useQuery<WorkflowSession | null>({
     queryKey: ["/api/workflow-sessions", alertId],
     queryFn: async (): Promise<WorkflowSession | null> => {
       if (!alertId) return null;
       const response = await fetch(`/api/workflow-sessions/${alertId}`);
-      if (!response.ok) return null; // No existing session
+      if (!response.ok) {
+        // Auto-create workflow session on 404 per Howard University Playbook  
+        try {
+          console.log('Auto-creating workflow session for alert:', alertId);
+          const createResponse = await apiRequest("POST", "/api/workflow-sessions", {
+            alert_id: alertId,
+            current_node: "identification_phase",
+            completed_nodes: [],
+            actions_taken: [],
+            status: "Active",
+            user_role: "Analyst",
+            started_at: new Date().toISOString()
+          });
+          console.log('Auto-created workflow session:', createResponse);
+          return createResponse as WorkflowSession;
+        } catch (error) {
+          console.error('Failed to auto-create workflow session:', error);
+          return null;
+        }
+      }
       return response.json();
     },
     enabled: !!alertId,
@@ -70,7 +89,17 @@ export function useWorkflow(alertId: string | null) {
     },
     onSuccess: (session) => {
       if (session && typeof session === 'object' && 'id' in session && 'alert_id' in session && 'current_node' in session) {
-        setWorkflow(session as WorkflowSession);
+        const workflowSession: WorkflowSession = {
+          id: String((session as any).id),
+          status: ((session as any).status as "Active" | "Completed" | "Paused") || "Active",
+          alert_id: String((session as any).alert_id),
+          current_node: String((session as any).current_node),
+          started_at: new Date((session as any).started_at || new Date()),
+          completed_nodes: ((session as any).completed_nodes as string[]) || [],
+          actions_taken: (session as any).actions_taken || {},
+          user_role: ((session as any).user_role as "Analyst" | "Manager" | "Client") || "Analyst"
+        };
+        setWorkflow(workflowSession);
         queryClient.invalidateQueries({ queryKey: ["/api/workflow-sessions", alertId] });
       }
     }
@@ -123,12 +152,12 @@ export function useWorkflow(alertId: string | null) {
     }
   };
 
-  // Compute test-compatible properties  
-  const currentStep = playbookData && currentNodeId ? 
-    Object.keys(playbookData.nodes).indexOf(currentNodeId) + 1 : 0;
-  const totalSteps = playbookData ? Object.keys(playbookData.nodes).length : 0;
-  const stepHistory = playbookData ? 
-    Object.keys(playbookData.nodes).map((nodeId, index) => ({
+  // Compute test-compatible properties
+  const currentStep = playbookData && currentNodeId ?
+    Object.keys(playbookData.nodes as Record<string, any> || {}).indexOf(currentNodeId) + 1 : 0;
+  const totalSteps = playbookData ? Object.keys(playbookData.nodes as Record<string, any> || {}).length : 0;
+  const stepHistory = playbookData ?
+    Object.keys(playbookData.nodes as Record<string, any> || {}).map((nodeId, index) => ({
       step: index + 1,
       title: (playbookData.nodes as Record<string, any>)[nodeId]?.title || nodeId,
       completed: completedNodes.includes(nodeId),

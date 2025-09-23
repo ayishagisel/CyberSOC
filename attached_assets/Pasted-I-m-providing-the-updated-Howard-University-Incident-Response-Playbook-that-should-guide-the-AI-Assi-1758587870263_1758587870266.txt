@@ -1,0 +1,33 @@
+I'm providing the updated Howard University Incident Response Playbook that should guide the AI Assistant functionality in my CyberSOC application. This playbook
+   defines:
+
+  1. **AI Guidance Features** (Section 6): Step-by-step branching logic, Sentinel/Defender telemetry-based popups, and playbook citations
+  2. **Role-Specific Views** (Section 5): Technical details for Analysts, SLA status for Managers, plain-language for Clients
+  3. **Interactive Workflow** (Section 7): Clickable actions like "Isolate Endpoint", "Review Logs", "Escalate Case"
+  4. **Incident Response Lifecycle** (Section 4): The 6-phase process that should drive workflow progression
+
+  Please update the application to implement:
+  - AI Assistant Panel with branching logic from this playbook
+  - Proper workflow progression through the 6 phases (Preparation → Lessons Learned)
+  - Interactive containment actions (Isolate Endpoints, Lock User Accounts, etc.)
+  - Role-based content filtering as defined in Section 5
+
+  The current codebase has the foundation but needs the AI Assistant Panel enhanced to follow this playbook structure and provide the guided experience described.
+
+  Focus on implementing the missing Phase 1 features rather than fixing test mocks.
+
+  🔑 Key Benefits of This Approach
+
+  1. Gives Replit Clear Direction: Instead of guessing what the AI Assistant should do, it now has the actual playbook
+  2. Aligns with Your Vision: This matches your original prompt's emphasis on "AI-guided workflow" and "interactive containment actions"
+  3. Provides Real Content: The playbook gives actual prompts, steps, and branching logic to implement
+  4. Focuses on Value: Directs attention to user-facing features rather than test infrastructure
+
+  💡 What This Should Enable
+
+  With this playbook, Replit should be able to implement:
+  - ✅ AI prompts like "Outbound traffic anomaly detected. MITRE ref: TA0011. Start guided response?"
+  - ✅ Branching workflows through the 6-phase incident response lifecycle
+  - ✅ Role-specific filtering so Managers see SLA status while Analysts see technical details
+  - ✅ Interactive actions that actually progress the simulation state
+  - ✅ MITRE ATT&CK integration with proper technique mapping

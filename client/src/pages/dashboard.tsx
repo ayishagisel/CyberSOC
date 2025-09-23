@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Navbar from "@/components/Navbar";
 import WorkflowTracker from "@/components/WorkflowTracker";
 import AlertCard from "@/components/AlertCard";
@@ -14,6 +14,7 @@ import { useWorkflow } from "@/hooks/use-workflow";
 export default function Dashboard() {
   const [userRole, setUserRole] = useState<"Analyst" | "Manager" | "Client">("Analyst");
   const [selectedAlert, setSelectedAlert] = useState<string | null>(null);
+  // const queryClient = useQueryClient();
   
   const { data: alerts = [], isLoading: alertsLoading } = useQuery<Alert[]>({
     queryKey: ["/api/alerts"],
@@ -34,6 +35,22 @@ export default function Dashboard() {
   // Initialize workflow hook with the active alert - this must always be called
   const { currentNode, workflow, advanceWorkflow, playbook } = useWorkflow(activeAlert?.id || null);
 
+  // Map current workflow node to Howard University phase
+  const getCurrentPhase = (): "Preparation" | "Identification" | "Containment" | "Eradication" | "Recovery" | "Lessons Learned" => {
+    if (!currentNode?.id) return "Identification";
+    
+    const nodeToPhaseMap: Record<string, "Preparation" | "Identification" | "Containment" | "Eradication" | "Recovery" | "Lessons Learned"> = {
+      "preparation_phase": "Preparation",
+      "identification_phase": "Identification", 
+      "containment_phase": "Containment",
+      "eradication_phase": "Eradication",
+      "recovery_phase": "Recovery",
+      "lessons_learned_phase": "Lessons Learned"
+    };
+    
+    return nodeToPhaseMap[currentNode.id] || "Identification";
+  };
+
   if (alertsLoading || endpointsLoading || logsLoading) {
     return (
       <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
@@ -52,50 +69,26 @@ export default function Dashboard() {
       <Navbar userRole={userRole} onRoleChange={setUserRole} />
       
       <div className="flex h-screen overflow-hidden">
-        <WorkflowTracker 
-          currentPhase={
-            // Map current node ID to phase name for UI display
-            (() => {
-              const nodeToPhaseMap: Record<string, string> = {
-                "detection_phase": "Detection",
-                "scoping_phase": "Scoping",
-                "investigation_phase": "Investigation", 
-                "remediation_phase": "Remediation",
-                "post_incident_phase": "Post-Incident"
-              };
-              return nodeToPhaseMap[workflow?.current_node || ""] || "Detection";
-            })()
-          }
-          completedPhases={
-            // Convert node IDs to phase names for UI display
-            (workflow?.completed_nodes || []).map(nodeId => {
-              const nodeToPhaseMap: Record<string, string> = {
-                "detection_phase": "Detection",
-                "scoping_phase": "Scoping",
-                "investigation_phase": "Investigation", 
-                "remediation_phase": "Remediation",
-                "post_incident_phase": "Post-Incident"
-              };
-              return nodeToPhaseMap[nodeId] || nodeId;
-            })
-          }
-          mitreAttackTechniques={activeAlert?.mitre_tactics || []}
+        <WorkflowTracker
+          alertId={activeAlert?.id || ""}
+          userRole={userRole}
           onPhaseClick={(phaseId) => {
             console.log('Phase clicked:', phaseId, 'for alert:', selectedAlert);
-            
+
             // Map UI phase names to playbook node IDs
             const phaseToNodeMap: Record<string, string> = {
-              "Detection": "detection_phase",
-              "Scoping": "scoping_phase", 
-              "Investigation": "investigation_phase",
-              "Remediation": "remediation_phase",
-              "Post-Incident": "post_incident_phase"
+              "Preparation": "preparation_phase",
+              "Identification": "identification_phase", 
+              "Containment": "containment_phase",
+              "Eradication": "eradication_phase",
+              "Recovery": "recovery_phase",
+              "Lessons Learned": "lessons_learned_phase"
             };
-            
+
             const nodeId = phaseToNodeMap[phaseId];
-            console.log('Mapped to nodeId:', nodeId, 'playbook exists:', !!playbook, 'node exists:', !!playbook?.nodes?.[nodeId]);
-            
-            if (nodeId && playbook?.nodes?.[nodeId]) {
+            console.log('Mapped to nodeId:', nodeId, 'playbook exists:', !!playbook, 'node exists:', !!(playbook?.nodes as Record<string, any>)?.[nodeId]);
+
+            if (nodeId && (playbook?.nodes as Record<string, any>)?.[nodeId]) {
               console.log('Calling advanceWorkflow with:', nodeId);
               advanceWorkflow(nodeId, `Advanced to ${phaseId} phase`);
             } else {
@@ -154,7 +147,14 @@ export default function Dashboard() {
             <AIAssistantPanel
               currentNode={currentNode}
               alertId={selectedAlert}
-              onAction={(action) => console.log("Action:", action)}
+              onAction={(action) => {
+                console.log("Action:", action);
+                // Trigger UI refresh after actions  
+                // queryClient.invalidateQueries({ queryKey: ["/api/endpoints"] });
+                // queryClient.invalidateQueries({ queryKey: ["/api/alerts"] });
+              }}
+              userRole={userRole}
+              currentPhase={getCurrentPhase()}
               data-testid="ai-assistant-panel"
             />
           )}

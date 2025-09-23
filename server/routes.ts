@@ -228,8 +228,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/workflow-sessions", authenticateJWT, async (req: AuthRequest, res) => {
     try {
       // Validate request body against schema
-      const validatedData = insertWorkflowSessionSchema.omit({ id: true }).parse(req.body);
-      const session = await storage.createWorkflowSession(validatedData);
+      const validatedData = insertWorkflowSessionSchema.omit({ id: true }).parse({
+        ...req.body,
+        status: req.body.status || "Active"
+      } as any);
+      const session = await storage.createWorkflowSession({
+        ...validatedData,
+        status: validatedData.status as "Active" | "Completed" | "Paused",
+        started_at: validatedData.started_at || new Date(),
+        completed_nodes: (validatedData.completed_nodes as string[]) || [],
+        actions_taken: validatedData.actions_taken || []
+      });
       res.json(session);
     } catch (error) {
       console.error("Failed to create workflow session:", error);
@@ -299,7 +308,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('Report generated successfully:', { 
         reportId: report.id, 
         sessionId: report.session_id,
-        incidentTitle: report.incident_summary?.title 
+        incidentTitle: (report.incident_summary as any)?.title 
       });
       
       if (format === 'pdf') {
@@ -345,11 +354,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/actions/isolate-all", authenticateJWT, async (req: AuthRequest, res) => {
     try {
       const { endpointIds } = req.body;
-      const promises = endpointIds.map((id: string) => 
-        storage.updateEndpoint(id, { status: "Isolated" })
-      );
-      await Promise.all(promises);
-      res.json({ success: true, message: "All endpoints isolated" });
+      
+      // If no specific endpointIds provided, isolate all affected endpoints
+      if (!endpointIds || endpointIds.length === 0) {
+        const endpoints = await storage.getEndpoints();
+        const affectedEndpoints = endpoints.filter(ep => ep.status === "Affected" || ep.status === "Normal");
+        const promises = affectedEndpoints.map(ep => 
+          storage.updateEndpoint(ep.id, { status: "Isolated" })
+        );
+        await Promise.all(promises);
+        res.json({ 
+          success: true, 
+          message: `All endpoints isolated (${affectedEndpoints.length} total)`,
+          isolatedCount: affectedEndpoints.length
+        });
+      } else {
+        const promises = endpointIds.map((id: string) => 
+          storage.updateEndpoint(id, { status: "Isolated" })
+        );
+        await Promise.all(promises);
+        res.json({ 
+          success: true, 
+          message: "All specified endpoints isolated",
+          isolatedCount: endpointIds.length
+        });
+      }
     } catch (error) {
       res.status(500).json({ error: "Failed to isolate endpoints" });
     }
@@ -397,6 +426,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       res.status(500).json({ error: "Failed to analyze network traffic" });
+    }
+  });
+
+  // Howard University Playbook - New Action Endpoints
+  app.post("/api/actions/escalate", authenticateJWT, async (req: AuthRequest, res) => {
+    try {
+      const { alertId, escalationType, reason } = req.body;
+      // Simulate escalation to manager/incident commander
+      res.json({ 
+        success: true, 
+        message: "Incident escalated to management team",
+        escalationType,
+        reason,
+        escalatedTo: "incident-commander@howard.edu",
+        priority: "Critical",
+        slaTimer: "45 minutes remaining"
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to escalate incident" });
+    }
+  });
+
+  app.post("/api/actions/segment-network", authenticateJWT, async (req: AuthRequest, res) => {
+    try {
+      const { alertId } = req.body;
+      // Simulate Azure NSG emergency rules deployment
+      res.json({ 
+        success: true, 
+        message: "Network segmentation rules deployed",
+        rulesDeployed: [
+          "Block-Finance-Subnet-Outbound",
+          "Isolate-Affected-VLANs", 
+          "Emergency-DMZ-Lockdown"
+        ],
+        azureNSG: "howard-emergency-nsg-001",
+        affectedSubnets: ["192.168.10.0/24", "192.168.20.0/24"]
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to deploy network segmentation" });
+    }
+  });
+
+  app.post("/api/actions/azure-ad-lockdown", authenticateJWT, async (req: AuthRequest, res) => {
+    try {
+      const { alertId } = req.body;
+      // Simulate Azure AD conditional access emergency policies
+      res.json({ 
+        success: true, 
+        message: "Azure AD emergency lockdown activated",
+        policiesActivated: [
+          "Emergency-Block-All-Access",
+          "Require-MFA-All-Users",
+          "Block-Legacy-Auth"
+        ],
+        affectedUsers: 1247,
+        exemptAccounts: ["emergency-admin@howard.edu"],
+        lockdownLevel: "Maximum"
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to activate Azure AD lockdown" });
     }
   });
 

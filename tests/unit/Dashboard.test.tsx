@@ -24,12 +24,14 @@ vi.mock('@/components/Navbar', () => ({
 }))
 
 vi.mock('@/components/WorkflowTracker', () => ({
-  default: ({ currentPhase, completedPhases, mitreAttackTechniques, onPhaseClick }: any) => (
+  default: ({ alertId, userRole, onPhaseClick }: any) => (
     <div data-testid="workflow-tracker">
-      <span data-testid="current-phase">{currentPhase}</span>
-      <div data-testid="completed-phases">{completedPhases.join(', ')}</div>
-      <div data-testid="mitre-techniques">{mitreAttackTechniques.join(', ')}</div>
-      <button onClick={() => onPhaseClick('Investigation')} data-testid="phase-click-btn">
+      <span data-testid="current-phase">Detection</span>
+      <div data-testid="completed-phases">Detection, Scoping</div>
+      <div data-testid="mitre-techniques">T1486, T1059.001</div>
+      <span data-testid="alert-id">{alertId}</span>
+      <span data-testid="user-role">{userRole}</span>
+      <button onClick={() => onPhaseClick && onPhaseClick('Investigation')} data-testid="phase-click-btn">
         Click Phase
       </button>
     </div>

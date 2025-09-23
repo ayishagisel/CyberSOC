@@ -163,7 +163,7 @@ export class FileStorage implements IStorage {
     const reports = await this.readJsonFile<Report>("reports.json");
     const report: Report = {
       id: randomUUID(),
-      session_id: sessionId,
+      session_id: sessionId || null,
       generated_at: new Date(),
       incident_summary: {
         title: "Ransomware Attack - Financial Department",
@@ -306,9 +306,9 @@ export class DatabaseStorage implements IStorage {
     }
     
     let query = db.select().from(logs);
-    
+
     if (conditions.length > 0) {
-      query = query.where(and(...conditions));
+      query = query.where(and(...conditions)) as any;
     }
     
     const result = await query.orderBy(desc(logs.timestamp));

@@ -344,15 +344,20 @@ export default function AIAssistantPanel({
                   onClick={() => executeActionMutation.mutate(action)}
                   disabled={executeActionMutation.isPending}
                   variant={actionConfig.variant}
-                  className="w-full p-3 text-sm font-medium text-left"
+                  className="w-full p-4 h-auto min-h-[80px] text-left flex flex-col items-start justify-start space-y-1"
                   data-testid={`${action.toLowerCase().replace(/\s+/g, '-')}-action`}
                 >
-                  <div>
-                    {actionConfig.icon} {executeActionMutation.isPending ? "Processing..." : action}
+                  <div className="text-sm font-medium flex items-center">
+                    <span className="mr-2">{actionConfig.icon}</span>
+                    <span>{executeActionMutation.isPending ? "Processing..." : action}</span>
                   </div>
-                  <div className="text-xs mt-1 opacity-80">{actionConfig.description}</div>
+                  <div className="text-xs opacity-80 w-full text-left break-words">
+                    {actionConfig.description}
+                  </div>
                   {userRole === "Analyst" && (
-                    <div className="text-xs mt-1 opacity-60 italic">{actionConfig.rationale}</div>
+                    <div className="text-xs opacity-60 italic w-full text-left break-words">
+                      {actionConfig.rationale}
+                    </div>
                   )}
                 </Button>
               );

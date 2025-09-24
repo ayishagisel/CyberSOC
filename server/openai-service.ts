@@ -148,30 +148,80 @@ Format your response as JSON with keys: summary, recommendations (array), riskLe
       const content = completion.choices[0]?.message?.content;
       if (!content) throw new Error('No response from AI');
 
+      // Clean up markdown code blocks before parsing
+      const cleanedContent = content.replace(/```json\s*|\s*```/g, '').trim();
+
       // Try to parse JSON response
       try {
-        return JSON.parse(content);
+        return JSON.parse(cleanedContent);
       } catch {
         // Fallback if JSON parsing fails - extract useful information from text response
-        const cleanContent = content.replace(/```json|```/g, '').trim();
+        console.log('Failed to parse AI response as JSON:', cleanedContent);
 
         // Try to extract a readable summary from the content
         let extractedSummary = "Multiple endpoints in the Finance department have been affected by a security incident requiring immediate attention.";
 
         // Look for summary-like content in the response
-        const summaryMatch = content.match(/summary["\s]*:[\s"]*([^",}]+)/i);
+        const summaryMatch = cleanedContent.match(/"summary"\s*:\s*"([^"]+)"/i);
         if (summaryMatch && summaryMatch[1]) {
-          extractedSummary = summaryMatch[1].replace(/"/g, '').trim();
-        } else if (!content.includes('{') && !content.includes('}')) {
+          extractedSummary = summaryMatch[1].trim();
+        } else if (!cleanedContent.includes('{') && !cleanedContent.includes('}')) {
           // If it's plain text without JSON structure, use it directly
-          extractedSummary = cleanContent.length > 300 ? cleanContent.substring(0, 300) + "..." : cleanContent;
+          extractedSummary = cleanedContent.length > 300 ? cleanedContent.substring(0, 300) + "..." : cleanedContent;
+        }
+
+        // Try to extract recommendations
+        let extractedRecommendations = ["Review the AI analysis above", "Take appropriate action based on your role", "Document all actions taken"];
+        const recommendationsMatch = cleanedContent.match(/"recommendations"\s*:\s*\[([\s\S]*?)\]/);
+        if (recommendationsMatch && recommendationsMatch[1]) {
+          try {
+            const recArray = JSON.parse(`[${recommendationsMatch[1]}]`);
+            if (Array.isArray(recArray)) {
+              extractedRecommendations = recArray.map((rec: any) => {
+                if (typeof rec === 'string') return rec;
+                if (rec && typeof rec === 'object') {
+                  return typeof rec.action === 'string' ? rec.action : JSON.stringify(rec);
+                }
+                return rec.toString();
+              }).filter(Boolean);
+            }
+          } catch {
+            // Keep default recommendations if parsing fails
+          }
+        }
+
+        // Try to extract risk level
+        let riskLevel: "Low" | "Medium" | "High" | "Critical" = "Medium";
+        const riskMatch = cleanedContent.match(/"riskLevel"\s*:\s*"(Low|Medium|High|Critical)"/i);
+        if (riskMatch && riskMatch[1]) {
+          riskLevel = riskMatch[1] as "Low" | "Medium" | "High" | "Critical";
+        }
+
+        // Try to extract next steps
+        let extractedNextSteps = ["Continue monitoring", "Follow established procedures"];
+        const nextStepsMatch = cleanedContent.match(/"nextSteps"\s*:\s*\[([\s\S]*?)\]/);
+        if (nextStepsMatch && nextStepsMatch[1]) {
+          try {
+            const stepsArray = JSON.parse(`[${nextStepsMatch[1]}]`);
+            if (Array.isArray(stepsArray)) {
+              extractedNextSteps = stepsArray.map((step: any) => {
+                if (typeof step === 'string') return step;
+                if (step && typeof step === 'object') {
+                  return typeof step.action === 'string' ? step.action : JSON.stringify(step);
+                }
+                return step.toString();
+              }).filter(Boolean);
+            }
+          } catch {
+            // Keep default next steps if parsing fails
+          }
         }
 
         return {
           summary: extractedSummary,
-          recommendations: ["Review the AI analysis above", "Take appropriate action based on your role", "Document all actions taken"],
-          riskLevel: "Medium" as const,
-          nextSteps: ["Continue monitoring", "Follow established procedures"]
+          recommendations: extractedRecommendations,
+          riskLevel,
+          nextSteps: extractedNextSteps
         };
       }
     } catch (error) {

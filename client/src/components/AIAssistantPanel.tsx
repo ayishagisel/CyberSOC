@@ -381,8 +381,10 @@ export default function AIAssistantPanel({
                     <div className="text-sm">
                       <strong>Top Recommendations:</strong>
                       <ul className="list-disc list-inside mt-1 ml-2 space-y-1">
-                        {aiAnalysis.analysis.recommendations.map((rec: string, i: number) => (
-                          <li key={i} className="text-xs">{rec}</li>
+                        {aiAnalysis.analysis.recommendations.map((rec: string | {action: string, justification?: string}, i: number) => (
+                          <li key={i} className="text-xs">
+                            {typeof rec === 'string' ? rec : rec.action}
+                          </li>
                         ))}
                       </ul>
                     </div>

@@ -1,13 +1,38 @@
 import { useState, useEffect } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { X, Shield, BookOpen, Clock, Activity, AlertTriangle, CheckCircle, Info } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { X, Shield, BookOpen, Clock, Activity, AlertTriangle, CheckCircle, Info, Send, Brain, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { PlaybookNode } from "@shared/schema";
+
+interface AIAnalysisResponse {
+  analysis: {
+    summary: string;
+    recommendations: string[];
+    riskLevel: "Low" | "Medium" | "High" | "Critical";
+    nextSteps: string[];
+  };
+  context: {
+    alertId: string;
+    phase: string;
+    userRole: string;
+    timestamp: string;
+  };
+}
+
+interface AIChatResponse {
+  response: string;
+  context: {
+    alertId: string;
+    phase: string;
+    userRole: string;
+  };
+}
 
 interface AIAssistantPanelProps {
   currentNode?: PlaybookNode;
@@ -29,6 +54,8 @@ export default function AIAssistantPanel({
   const [actionsTaken, setActionsTaken] = useState(3);
   const [completion, setCompletion] = useState(25);
   const [showTelemetryPopup, setShowTelemetryPopup] = useState(false);
+  const [chatQuestion, setChatQuestion] = useState("");
+  const [aiInsights, setAiInsights] = useState<string>("");
   
   // Use props currentPhase or default to Identification
   const activePhase = currentPhase || "Identification";
@@ -204,6 +231,53 @@ export default function AIAssistantPanel({
     },
   });
 
+  // AI Analysis Query - Automatically analyze the current incident
+  const { data: aiAnalysis, isLoading: aiAnalysisLoading } = useQuery<AIAnalysisResponse>({
+    queryKey: ["/api/ai/analyze", alertId, activePhase],
+    queryFn: async () => {
+      const response = await apiRequest("POST", "/api/ai/analyze", {
+        alertId,
+        currentPhase: activePhase
+      });
+      return await response.json();
+    },
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    enabled: !!alertId
+  });
+
+  // AI Chat Mutation
+  const chatMutation = useMutation<AIChatResponse, Error, string>({
+    mutationFn: async (question: string) => {
+      const response = await apiRequest("POST", "/api/ai/chat", {
+        question,
+        alertId,
+        currentPhase: activePhase
+      });
+      return await response.json();
+    },
+    onSuccess: (data) => {
+      setAiInsights(data.response);
+      setChatQuestion("");
+      toast({
+        title: "AI Analysis Complete",
+        description: "New insights have been generated.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to get AI response.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleAskAI = () => {
+    if (chatQuestion.trim()) {
+      chatMutation.mutate(chatQuestion.trim());
+    }
+  };
+
   if (isMinimized) {
     return (
       <div className="fixed bottom-4 right-4 bg-card border border-border rounded-lg p-4 shadow-lg">
@@ -288,7 +362,83 @@ export default function AIAssistantPanel({
             </div>
           </div>
         </div>
-        
+
+        {/* AI-Powered Incident Analysis */}
+        <div className="bg-gradient-to-r from-primary/5 to-info/5 border border-primary/20 rounded-lg p-4">
+          <div className="flex items-start space-x-3">
+            <div className="w-8 h-8 bg-gradient-to-r from-primary to-info rounded-full flex items-center justify-center flex-shrink-0">
+              <Brain className="w-4 h-4 text-white" />
+            </div>
+            <div className="flex-1">
+              <h4 className="font-medium mb-2 flex items-center">
+                🤖 AI Security Analysis
+                {aiAnalysisLoading && <Loader2 className="w-4 h-4 ml-2 animate-spin" />}
+              </h4>
+
+              {aiAnalysis?.analysis && (
+                <div className="space-y-3">
+                  <div className="text-sm">
+                    <strong>Summary:</strong> {aiAnalysis.analysis.summary}
+                  </div>
+
+                  {aiAnalysis.analysis.recommendations && (
+                    <div className="text-sm">
+                      <strong>Top Recommendations:</strong>
+                      <ul className="list-disc list-inside mt-1 ml-2 space-y-1">
+                        {aiAnalysis.analysis.recommendations.map((rec: string, i: number) => (
+                          <li key={i} className="text-xs">{rec}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  <div className="flex items-center space-x-4 text-xs">
+                    <Badge variant={
+                      aiAnalysis.analysis.riskLevel === "Critical" ? "destructive" :
+                      aiAnalysis.analysis.riskLevel === "High" ? "default" :
+                      aiAnalysis.analysis.riskLevel === "Medium" ? "secondary" : "outline"
+                    }>
+                      Risk: {aiAnalysis.analysis.riskLevel}
+                    </Badge>
+                  </div>
+                </div>
+              )}
+
+              {/* AI Chat Interface */}
+              <div className="mt-4 pt-3 border-t border-primary/10">
+                <div className="flex space-x-2">
+                  <Input
+                    placeholder="Ask AI about this incident..."
+                    value={chatQuestion}
+                    onChange={(e) => setChatQuestion(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleAskAI()}
+                    disabled={chatMutation.isPending}
+                    className="text-xs"
+                  />
+                  <Button
+                    size="sm"
+                    onClick={handleAskAI}
+                    disabled={!chatQuestion.trim() || chatMutation.isPending}
+                  >
+                    {chatMutation.isPending ? (
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <Send className="w-3 h-3" />
+                    )}
+                  </Button>
+                </div>
+
+                {aiInsights && (
+                  <div className="mt-3 p-2 bg-primary/10 rounded text-xs">
+                    <strong>💡 AI Insights:</strong><br />
+                    {aiInsights}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Howard University Interactive Containment Actions */}
         <div className="bg-card border border-border rounded-lg p-4">
           <h4 className="font-medium mb-3">Recommended Actions</h4>

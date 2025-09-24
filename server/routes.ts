@@ -7,6 +7,7 @@ import { MOCK_USERS, type User, type DbUser, users, insertWorkflowSessionSchema 
 import { z } from "zod";
 import { createGraphClient, MicrosoftGraphSecurity } from "./microsoft-graph-integration";
 import { eq } from "drizzle-orm";
+import { openaiService } from "./openai-service";
 
 // JWT secret for mock SSO
 const JWT_SECRET = process.env.JWT_SECRET || (() => {
@@ -808,6 +809,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? 'Microsoft Graph integration active - live security data available'
         : 'Microsoft Graph not configured - using mock data. Set AZURE_CLIENT_ID, AZURE_CLIENT_SECRET, AZURE_TENANT_ID environment variables'
     });
+  });
+
+  // AI Assistant endpoints
+  app.post("/api/ai/chat", authenticateJWT, async (req: AuthRequest, res) => {
+    try {
+      const { question, alertId, currentPhase } = req.body;
+
+      // Gather incident context
+      const alert = alertId ? await storage.getAlert(alertId) : undefined;
+      const logs = await storage.getLogs({ limit: 10 }); // Recent logs
+      const endpoints = await storage.getEndpoints();
+
+      const context = {
+        alert,
+        logs,
+        endpoints,
+        userRole: req.user?.role as "Analyst" | "Manager" | "Client" || "Analyst",
+        currentPhase: currentPhase || "Identification",
+        question
+      };
+
+      const response = await openaiService.generateResponse(context);
+
+      res.json({
+        response,
+        context: {
+          alertId,
+          phase: context.currentPhase,
+          userRole: context.userRole
+        }
+      });
+    } catch (error) {
+      console.error('AI chat error:', error);
+      res.status(500).json({ error: "Failed to generate AI response" });
+    }
+  });
+
+  app.post("/api/ai/analyze", authenticateJWT, async (req: AuthRequest, res) => {
+    try {
+      const { alertId, currentPhase } = req.body;
+
+      // Gather full incident context
+      const alert = alertId ? await storage.getAlert(alertId) : undefined;
+      const logs = await storage.getLogs({ limit: 20 });
+      const endpoints = await storage.getEndpoints();
+
+      const context = {
+        alert,
+        logs,
+        endpoints,
+        userRole: req.user?.role as "Analyst" | "Manager" | "Client" || "Analyst",
+        currentPhase: currentPhase || "Identification"
+      };
+
+      const analysis = await openaiService.analyzeIncident(context);
+
+      res.json({
+        analysis,
+        context: {
+          alertId,
+          phase: context.currentPhase,
+          userRole: context.userRole,
+          timestamp: new Date().toISOString()
+        }
+      });
+    } catch (error) {
+      console.error('AI analysis error:', error);
+      res.status(500).json({ error: "Failed to analyze incident" });
+    }
   });
 
   const httpServer = createServer(app);

@@ -16,10 +16,15 @@ export default function LogViewer({ logs: initialLogs }: LogViewerProps) {
   const [sourceFilter, setSourceFilter] = useState("All Sources");
   const [severityFilter, setSeverityFilter] = useState("All Severities");
 
-  const { data: logs = initialLogs } = useQuery<LogEntry[]>({
-    queryKey: ["/api/logs", { source: sourceFilter, severity: severityFilter }],
-    enabled: sourceFilter !== "All Sources" || severityFilter !== "All Severities",
+  // For now, let's use client-side filtering only to fix the immediate issue
+  // TODO: Optimize with server-side filtering later
+  const filteredLogs = initialLogs.filter(log => {
+    const matchesSource = sourceFilter === "All Sources" || log.source === sourceFilter;
+    const matchesSeverity = severityFilter === "All Severities" || log.severity === severityFilter;
+    return matchesSource && matchesSeverity;
   });
+
+  const logs = filteredLogs;
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {

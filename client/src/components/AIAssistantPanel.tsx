@@ -377,10 +377,6 @@ export default function AIAssistantPanel({
 
               {aiAnalysis?.analysis && (
                 <div className="space-y-3">
-                  <div className="text-sm">
-                    <strong>Summary:</strong> {aiAnalysis.analysis.summary}
-                  </div>
-
                   {aiAnalysis.analysis.recommendations && (
                     <div className="text-sm">
                       <strong>Top Recommendations:</strong>
@@ -391,6 +387,10 @@ export default function AIAssistantPanel({
                       </ul>
                     </div>
                   )}
+
+                  <div className="text-sm">
+                    <strong>Summary:</strong> {aiAnalysis.analysis.summary}
+                  </div>
 
                   <div className="flex items-center space-x-4 text-xs">
                     <Badge variant={

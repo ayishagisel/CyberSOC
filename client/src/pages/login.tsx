@@ -50,6 +50,7 @@ export default function LoginPage() {
         title: "Login Successful",
         description: `Logged in as ${selectedRole}`,
       });
+      setLocation("/tutorial");
     } catch (error) {
       toast({
         title: "Login Failed",
@@ -77,6 +78,7 @@ export default function LoginPage() {
         title: "Login Successful",
         description: "Welcome back!",
       });
+      setLocation("/tutorial");
     } catch (error: any) {
       toast({
         title: "Login Failed",

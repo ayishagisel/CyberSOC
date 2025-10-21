@@ -1,23 +1,25 @@
 import { Button } from "@/components/ui/button";
 import { Shield, User, LogOut, ChevronDown } from "lucide-react";
 import { useState } from "react";
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuTrigger,
-  DropdownMenuSeparator 
+  DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
 import NewSimulationDialog from "@/components/NewSimulationDialog";
+import HintsButton from "@/components/HintsButton";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 
 interface NavbarProps {
   userRole: "Analyst" | "Manager" | "Client";
   onRoleChange: (role: "Analyst" | "Manager" | "Client") => void;
+  actionsTaken?: number;
 }
 
-export default function Navbar({ userRole, onRoleChange }: NavbarProps) {
+export default function Navbar({ userRole, onRoleChange, actionsTaken = 0 }: NavbarProps) {
   const [showNewSimulationDialog, setShowNewSimulationDialog] = useState(false);
   const { user, logout } = useAuth();
   const { toast } = useToast();
@@ -66,15 +68,17 @@ export default function Navbar({ userRole, onRoleChange }: NavbarProps) {
         </div>
         
         <div className="flex items-center space-x-4">
-          <Button 
+          <HintsButton actionsTaken={actionsTaken} />
+
+          <Button
             onClick={() => setShowNewSimulationDialog(true)}
             className="bg-primary hover:bg-primary/90 text-primary-foreground"
             data-testid="new-simulation-btn"
           >
             New Simulation
           </Button>
-          
-          <NewSimulationDialog 
+
+          <NewSimulationDialog
             open={showNewSimulationDialog}
             onOpenChange={setShowNewSimulationDialog}
           />

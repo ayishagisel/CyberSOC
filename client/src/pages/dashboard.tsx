@@ -16,6 +16,7 @@ import { useLiveData } from "@/hooks/use-live-data";
 export default function Dashboard() {
   const [userRole, setUserRole] = useState<"Analyst" | "Manager" | "Client">("Analyst");
   const [selectedAlert, setSelectedAlert] = useState<string | null>(null);
+  const [actionsTaken, setActionsTaken] = useState(0);
   // const queryClient = useQueryClient();
 
   // Use live data hook for alerts and endpoints
@@ -76,7 +77,7 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <Navbar userRole={userRole} onRoleChange={setUserRole} />
+      <Navbar userRole={userRole} onRoleChange={setUserRole} actionsTaken={actionsTaken} />
       
       <div className="flex h-screen overflow-hidden">
         <WorkflowTracker
@@ -231,6 +232,7 @@ export default function Dashboard() {
                 if (matchingOption?.next_node) {
                   console.log("✅ Advancing workflow to:", matchingOption.next_node);
                   advanceWorkflow(matchingOption.next_node, action);
+                  setActionsTaken(prev => prev + 1);
                 } else {
                   console.warn("❌ No matching option found for action:", action);
                 }

@@ -61,12 +61,21 @@ const MITRE_TECHNIQUES = [
   }
 ];
 
-export default function WorkflowTracker({ 
+export default function WorkflowTracker({
   alertId,
   userRole,
   onPhaseClick
 }: WorkflowTrackerProps) {
   const { currentStep, totalSteps, stepHistory, isLoading } = useWorkflow(alertId);
+
+  // Debug logging
+  console.log('WorkflowTracker render:', {
+    alertId,
+    currentStep,
+    totalSteps,
+    stepHistory: stepHistory?.map(s => ({ title: s.title, completed: s.completed, isCurrent: (s as any).isCurrent })),
+    isLoading
+  });
   
   const getPhaseStatus = (phase: string) => {
     const completedSteps = stepHistory?.filter(s => s.completed).map(s => s.title) || [];
@@ -150,10 +159,10 @@ export default function WorkflowTracker({
       )}
 
       <div className="space-y-3">
-        {stepHistory && stepHistory.length > 0 ? stepHistory.map((step, index) => {
-          const status = step.completed ? "completed" : (index === currentStep - 1 ? "active" : "pending");
-          const isFutureStep = index >= currentStep;
-          
+        {stepHistory && stepHistory.length > 0 ? stepHistory.map((step: any, index) => {
+          const status = step.completed ? "completed" : (step.isCurrent ? "active" : "pending");
+          const isFutureStep = !step.completed && !step.isCurrent;
+
           return (
             <div
               key={step.step}
@@ -163,15 +172,15 @@ export default function WorkflowTracker({
               aria-current={status === "active" ? "step" : undefined}
               aria-describedby={`step-${step.step}-desc`}
               className={`workflow-step ${status} p-3 rounded-lg border-l-4 transition-colors ${
-                status === "active" ? "border-primary" : "border-muted"
+                status === "active" ? "border-primary bg-primary/5" : "border-muted"
               } ${isFutureStep ? "cursor-not-allowed opacity-60" : "cursor-pointer hover:bg-muted/50"}`}
-              data-testid={`workflow-phase-${step.title.toLowerCase()}`}
+              data-testid={`workflow-phase-${step.title.toLowerCase().replace(/\s+/g, '-')}`}
             >
               <div className="flex items-center justify-between">
                 <span className="font-medium">{step.title}</span>
                 {getStatusIcon(status)}
               </div>
-              {step.timestamp && (
+              {step.timestamp && step.completed && (
                 <p className="text-xs text-muted-foreground mt-1">
                   Completed: {new Date(step.timestamp).toLocaleTimeString()}
                 </p>
@@ -188,7 +197,7 @@ export default function WorkflowTracker({
               role="button"
               aria-current={status === "active" ? "step" : undefined}
               className={`workflow-step ${status} p-3 rounded-lg border-l-4 cursor-pointer hover:bg-muted/50 transition-colors ${
-                status === "active" ? "border-primary" : "border-muted"
+                status === "active" ? "border-primary bg-primary/5" : "border-muted"
               }`}
               data-testid={`workflow-phase-${phase.id.toLowerCase()}`}
             >

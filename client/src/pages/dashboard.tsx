@@ -45,19 +45,19 @@ export default function Dashboard() {
   // Initialize workflow hook with the active alert - this must always be called
   const { currentNode, workflow, advanceWorkflow, playbook } = useWorkflow(activeAlert?.id || null);
 
-  // Map current workflow node to Howard University phase
+  // Map current workflow node to Howard University phase for AI Assistant
   const getCurrentPhase = (): "Preparation" | "Identification" | "Containment" | "Eradication" | "Recovery" | "Lessons Learned" => {
     if (!currentNode?.id) return "Identification";
-    
+
+    // Map playbook phases to Howard University phases for AI Assistant display
     const nodeToPhaseMap: Record<string, "Preparation" | "Identification" | "Containment" | "Eradication" | "Recovery" | "Lessons Learned"> = {
-      "preparation_phase": "Preparation",
-      "identification_phase": "Identification", 
-      "containment_phase": "Containment",
-      "eradication_phase": "Eradication",
-      "recovery_phase": "Recovery",
-      "lessons_learned_phase": "Lessons Learned"
+      "detection_phase": "Identification",
+      "scoping_phase": "Identification",
+      "investigation_phase": "Containment",
+      "remediation_phase": "Eradication",
+      "post_incident_phase": "Lessons Learned"
     };
-    
+
     return nodeToPhaseMap[currentNode.id] || "Identification";
   };
 
@@ -82,27 +82,27 @@ export default function Dashboard() {
         <WorkflowTracker
           alertId={activeAlert?.id || ""}
           userRole={userRole}
-          onPhaseClick={(phaseId) => {
-            console.log('Phase clicked:', phaseId, 'for alert:', selectedAlert);
+          onPhaseClick={(phaseTitle) => {
+            console.log('Phase clicked:', phaseTitle, 'for alert:', selectedAlert);
 
-            // Map UI phase names to playbook node IDs
-            const phaseToNodeMap: Record<string, string> = {
-              "Preparation": "preparation_phase",
-              "Identification": "identification_phase", 
-              "Containment": "containment_phase",
-              "Eradication": "eradication_phase",
-              "Recovery": "recovery_phase",
-              "Lessons Learned": "lessons_learned_phase"
-            };
+            // Find the node ID that matches this phase title
+            if (!playbook?.nodes) {
+              console.log('No playbook loaded');
+              return;
+            }
 
-            const nodeId = phaseToNodeMap[phaseId];
-            console.log('Mapped to nodeId:', nodeId, 'playbook exists:', !!playbook, 'node exists:', !!(playbook?.nodes as Record<string, any>)?.[nodeId]);
+            const nodes = playbook.nodes as Record<string, any>;
+            const nodeId = Object.keys(nodes).find(
+              key => nodes[key].title === phaseTitle
+            );
 
-            if (nodeId && (playbook?.nodes as Record<string, any>)?.[nodeId]) {
+            console.log('Found nodeId:', nodeId, 'for title:', phaseTitle);
+
+            if (nodeId) {
               console.log('Calling advanceWorkflow with:', nodeId);
-              advanceWorkflow(nodeId, `Advanced to ${phaseId} phase`);
+              advanceWorkflow(nodeId, `Advanced to ${phaseTitle} phase`);
             } else {
-              console.log('Cannot advance workflow - missing node or playbook');
+              console.log('Cannot find node for phase title:', phaseTitle);
             }
           }}
         />
@@ -211,10 +211,29 @@ export default function Dashboard() {
               currentNode={currentNode}
               alertId={selectedAlert}
               onAction={(action) => {
-                console.log("Action:", action);
-                // Trigger UI refresh after actions  
-                // queryClient.invalidateQueries({ queryKey: ["/api/endpoints"] });
-                // queryClient.invalidateQueries({ queryKey: ["/api/alerts"] });
+                console.log("🎬 Dashboard onAction called:", {
+                  action,
+                  currentNodeId: currentNode?.id,
+                  currentNodeTitle: currentNode?.title,
+                  hasCurrentNode: !!currentNode
+                });
+
+                // Find the next node based on the action taken
+                const currentNodeOptions = currentNode?.options || [];
+                console.log("📋 Current node options:", currentNodeOptions);
+
+                const matchingOption = currentNodeOptions.find((opt: any) =>
+                  opt.label === action || opt.action === action
+                );
+
+                console.log("🔍 Matching option:", matchingOption);
+
+                if (matchingOption?.next_node) {
+                  console.log("✅ Advancing workflow to:", matchingOption.next_node);
+                  advanceWorkflow(matchingOption.next_node, action);
+                } else {
+                  console.warn("❌ No matching option found for action:", action);
+                }
               }}
               userRole={userRole}
               currentPhase={getCurrentPhase()}

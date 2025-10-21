@@ -20,7 +20,7 @@ export function useWorkflow(alertId: string | null) {
           console.log('Auto-creating workflow session for alert:', alertId);
           const createResponse = await apiRequest("POST", "/api/workflow-sessions", {
             alert_id: alertId,
-            current_node: "identification_phase",
+            current_node: "detection_phase",
             completed_nodes: [],
             actions_taken: [],
             status: "Active",
@@ -108,13 +108,23 @@ export function useWorkflow(alertId: string | null) {
 
   // Initialize workflow state from existing session or playbook
   useEffect(() => {
+    console.log('useWorkflow: Initializing workflow state', {
+      hasExistingSession: !!existingSession,
+      existingSessionNode: existingSession?.current_node,
+      hasPlaybook: !!playbookData,
+      playbookStartNode: playbookData?.start_node,
+      currentNodeId
+    });
+
     if (existingSession) {
       // Load from existing session
+      console.log('useWorkflow: Loading from existing session', existingSession);
       setCurrentNodeId(existingSession.current_node);
       setCompletedNodes(existingSession.completed_nodes);
       setWorkflow(existingSession);
     } else if (playbookData && playbookData.start_node && !currentNodeId) {
       // Start new workflow from playbook
+      console.log('useWorkflow: Starting new workflow from playbook');
       setCurrentNodeId(playbookData.start_node);
       setCompletedNodes([]);
     }
@@ -123,20 +133,31 @@ export function useWorkflow(alertId: string | null) {
   const currentNode = (playbookData?.nodes as Record<string, PlaybookNode> | undefined)?.[currentNodeId];
 
   const advanceWorkflow = (nextNodeId?: string, actionTaken?: string) => {
+    console.log('advanceWorkflow called:', { nextNodeId, actionTaken, currentNodeId, completedNodes });
+
     if (nextNodeId && (playbookData?.nodes as Record<string, PlaybookNode> | undefined)?.[nextNodeId] && currentNodeId) {
       // Only add current node to completed if it's not already there and not empty
-      const newCompletedNodes = completedNodes.includes(currentNodeId) 
-        ? completedNodes 
+      const newCompletedNodes = completedNodes.includes(currentNodeId)
+        ? completedNodes
         : [...completedNodes, currentNodeId];
-      
+
+      console.log('advanceWorkflow: Advancing from', currentNodeId, 'to', nextNodeId);
+      console.log('advanceWorkflow: New completed nodes:', newCompletedNodes);
+
       setCompletedNodes(newCompletedNodes);
       setCurrentNodeId(nextNodeId);
-      
+
       // Save to database
       saveWorkflowMutation.mutate({
         currentNode: nextNodeId,
         completedNodes: newCompletedNodes,
         action: actionTaken
+      });
+    } else {
+      console.warn('advanceWorkflow: Cannot advance', {
+        hasNextNodeId: !!nextNodeId,
+        nextNodeExists: nextNodeId ? !!(playbookData?.nodes as Record<string, PlaybookNode> | undefined)?.[nextNodeId] : false,
+        hasCurrentNodeId: !!currentNodeId
       });
     }
   };
@@ -154,16 +175,24 @@ export function useWorkflow(alertId: string | null) {
   };
 
   // Compute test-compatible properties
-  const currentStep = playbookData && currentNodeId ?
-    Object.keys(playbookData.nodes as Record<string, any> || {}).indexOf(currentNodeId) + 1 : 0;
-  const totalSteps = playbookData ? Object.keys(playbookData.nodes as Record<string, any> || {}).length : 0;
+  const nodeIds = playbookData ? Object.keys(playbookData.nodes as Record<string, any> || {}) : [];
+  const currentStepIndex = currentNodeId ? nodeIds.indexOf(currentNodeId) : -1;
+  const currentStep = currentStepIndex >= 0 ? currentStepIndex + 1 : 0;
+  const totalSteps = nodeIds.length;
+
   const stepHistory = playbookData ?
-    Object.keys(playbookData.nodes as Record<string, any> || {}).map((nodeId, index) => ({
-      step: index + 1,
-      title: (playbookData.nodes as Record<string, any>)[nodeId]?.title || nodeId,
-      completed: completedNodes.includes(nodeId),
-      timestamp: completedNodes.includes(nodeId) ? new Date().toISOString() : null
-    })) : [];
+    nodeIds.map((nodeId, index) => {
+      const isCompleted = completedNodes.includes(nodeId);
+      const isCurrent = nodeId === currentNodeId;
+
+      return {
+        step: index + 1,
+        title: (playbookData.nodes as Record<string, any>)[nodeId]?.title || nodeId,
+        completed: isCompleted,
+        timestamp: isCompleted ? new Date().toISOString() : null,
+        isCurrent
+      };
+    }) : [];
 
   return {
     // Original API for existing app usage
